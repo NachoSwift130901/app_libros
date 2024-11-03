@@ -72,9 +72,18 @@ class _BookSearchPageState extends State<BookSearchPage> {
               itemCount: books.length,
               itemBuilder: (context, index) {
                 final libro = books[index]['volumeInfo'];
+                final isbnList = libro['industryIdentifiers']?.map((id) => id['identifier']).toList() ?? ['No ISBN'];
+                final pageCount = libro['pageCount']?.toString();
                 return ListTile(
                   title: Text(libro['title']),
                   subtitle: Text(libro['authors']?.join(', ') ?? 'Autor desconocido'),
+                  trailing: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('ISBN: ${isbnList.join(', ')}'),
+                    Text('Páginas: $pageCount'),
+                  ],
+                  ),
                 );
               },
             ),
