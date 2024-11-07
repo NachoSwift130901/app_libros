@@ -12,6 +12,8 @@ dependencies:
     sdk: flutter
   flutter_bloc: ^8.1.6
   http: ^1.1.0
+  sqflite_common_ffi: ^2.3.0+4
+  sqflite_common_ffi_web: ^0.4.2+1
 
 dev_dependencies:
   flutter_test:

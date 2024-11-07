@@ -29,6 +29,7 @@ class BookSearchPage extends StatefulWidget {
 class _BookSearchPageState extends State<BookSearchPage> {
 
   List books = [];
+  TextEditingController searchController = TextEditingController();
 
 
   Future<void> buscarLibros(String query) async {
@@ -57,14 +58,24 @@ class _BookSearchPageState extends State<BookSearchPage> {
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              decoration: const InputDecoration(
-                labelText: 'Buscar libro',
-                border: OutlineInputBorder(),
-              ),
-              onSubmitted: (query) {
-                buscarLibros(query);
-              },
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: searchController,
+                    decoration: const InputDecoration(
+                      labelText: 'Buscar libro',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: () {
+                    buscarLibros(searchController.text);
+                  },
+                ),
+              ],
             ),
           ),
           Expanded(
@@ -74,7 +85,16 @@ class _BookSearchPageState extends State<BookSearchPage> {
                 final libro = books[index]['volumeInfo'];
                 final isbnList = libro['industryIdentifiers']?.map((id) => id['identifier']).toList() ?? ['No ISBN'];
                 final pageCount = libro['pageCount']?.toString();
+                final imageUrl = libro['imageLinks']?['thumbnail'] ?? '';
                 return ListTile(
+                  leading: imageUrl.isNotEmpty 
+                  ? Image.network(
+                      imageUrl, 
+                      width: 50, 
+                      fit: BoxFit.cover,
+                      
+                    ) 
+                  : const Icon(Icons.book),
                   title: Text(libro['title']),
                   subtitle: Text(libro['authors']?.join(', ') ?? 'Autor desconocido'),
                   trailing: Column(
