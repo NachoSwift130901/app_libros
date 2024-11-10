@@ -77,11 +77,15 @@ sealed class AppEvento {}
 
 class Inicializado extends AppEvento {}
 
+
+
+
 // Libros
 
 class AgregarLibro extends AppEvento {
    final String isbn;
    final String titulo;
+   final String genero;
    final String autor;
    final String portadaUrl;
    final DateTime fechaPublicacion;
@@ -95,7 +99,7 @@ class AgregarLibro extends AppEvento {
    final DateTime? fechaLectura;
    final int totalPaginas;
 
-  AgregarLibro({required this.isbn, required this.titulo, required this.autor, required this.portadaUrl, required this.fechaPublicacion, required this.rating, required this.critica, required this.esPrestado, required this.prestadoA, required this.prestadoDe, required this.fechaPrestacion, required this.fechaRegreso, required this.fechaLectura, required this.totalPaginas});
+  AgregarLibro({required this.isbn, required this.titulo,  required this.genero ,required this.autor, required this.portadaUrl, required this.fechaPublicacion, required this.rating, required this.critica, required this.esPrestado, required this.prestadoA, required this.prestadoDe, required this.fechaPrestacion, required this.fechaRegreso, required this.fechaLectura, required this.totalPaginas});
 }
 
 class EliminarLibro extends AppEvento {
@@ -136,6 +140,11 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
     _listaLibros = resultadoConsulta.map((e) => Libro.fromMap(e)).toList();
   }
 
+  Future<void> agregarLibro(String isbn, String titulo, String autor, String genero, String portadaUrl, DateTime fechaPublicacion, int rating, String critica, bool esPrestado, String? prestadoA, String? prestadoDe, DateTime? fechaPrestacion, DateTime? fechaRegreso, DateTime? fechaLectura, int totalPaginas) async {
+    await db.rawInsert('''INSERT INTO libros (isbn, titulo, autor, genero, portadaUrl, fechaPublicacion, rating, critica, esPrestado, prestadoA, prestadoDe, fechaPrestacion, fechaRegreso, fechaLectura, totalPaginas)''', 
+    [isbn, titulo, autor, genero, portadaUrl, fechaPublicacion, rating, critica, esPrestado, prestadoA, prestadoDe, fechaPrestacion, fechaRegreso, fechaLectura, totalPaginas]);
+    await todosLosLibros();
+  }
 
   // onEVENTOS //
   AppBloc() : super(Inicial()) {
@@ -144,5 +153,12 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
 
       emit(Operacional(listaLibros: _listaLibros));
     });
+  
+    on<AgregarLibro>(((event, emit)  async {
+      await agregarLibro(event.isbn, event.titulo, event.autor, event.genero, event.portadaUrl, event.fechaPublicacion, event.rating, event.critica, event.esPrestado, event.prestadoA, event.prestadoDe, event.fechaPrestacion, event.fechaRegreso, event.fechaLectura, event.totalPaginas);
+      emit((Operacional(listaLibros: _listaLibros)));
+    }));
+
+    
   }
 }
