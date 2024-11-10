@@ -38,10 +38,6 @@ class RepositorioBD {
             )
             '''  
           );
-
-
-
-
         }
       )
     );
@@ -66,11 +62,12 @@ class Inicial extends AppEstado {
 }
 
 class Operacional extends AppEstado {
+  final List<Libro> listaLibros;
 
+  Operacional({required this.listaLibros});
 
   @override
-  
-  List<Object?> get props => [];
+  List<Object?> get props => [listaLibros];
 
 }
 
@@ -129,21 +126,23 @@ class ActualizarLibro extends AppEvento {
 // ----------- BLOC ----------------//
 
 class AppBloc extends Bloc<AppEvento, AppEstado> {
-  final List<Libro> _listaLibros = [];
+   List<Libro> _listaLibros = [];
 
   RepositorioBD repo = RepositorioBD();
 
   Future<void> todosLosLibros() async {
     await repo.inicializar();
     var resultadoConsulta = await db.rawQuery('SELECT * FROM libros');
-    _listaLibros = resultadoConsulta.map((e) => Libro)
+    _listaLibros = resultadoConsulta.map((e) => Libro.fromMap(e)).toList();
   }
 
 
   // onEVENTOS //
   AppBloc() : super(Inicial()) {
     on<Inicializado>((event, emit) async{
-      
+      await todosLosLibros();
+
+      emit(Operacional(listaLibros: _listaLibros));
     });
   }
 }

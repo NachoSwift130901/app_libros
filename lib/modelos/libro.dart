@@ -4,6 +4,7 @@ class Libro with EquatableMixin {
    String isbn;
    String titulo;
    String autor;
+   String genero;
    String portadaUrl;
    DateTime fechaPublicacion;
    int rating;
@@ -21,6 +22,7 @@ class Libro with EquatableMixin {
       isbn: map['isbn']??0, 
       titulo: map['titulo']??'', 
       autor: map['autor']??'', 
+      genero: map['genero']??'',
       portadaUrl: map['portadaUrl']??'', 
       fechaPublicacion: map['fechaPublicacion'], 
       critica: map['critica'], 
@@ -40,6 +42,7 @@ class Libro with EquatableMixin {
     required this.isbn,
     required this.titulo,
     required this.autor,
+    required this.genero,
     required this.portadaUrl,
     required this.fechaPublicacion,
     required this.critica,
@@ -55,7 +58,7 @@ class Libro with EquatableMixin {
    });
    
      @override
-     List<Object?> get props => [isbn, titulo, autor, portadaUrl, fechaPublicacion, rating, critica, esPrestado, prestadoA, prestadoDe, fechaPrestacion, fechaRegreso, fechaLectura, totalPaginas];
+     List<Object?> get props => [isbn, titulo, autor, genero, portadaUrl, fechaPublicacion, rating, critica, esPrestado, prestadoA, prestadoDe, fechaPrestacion, fechaRegreso, fechaLectura, totalPaginas];
    
    
 }

@@ -7,13 +7,14 @@ environment:
   sdk: '>=3.1.0 <4.0.0'
 
 dependencies:
+  bloc_test: ^9.1.7
   equatable: ^2.0.5
   flutter:
     sdk: flutter
   flutter_bloc: ^8.1.6
   http: ^1.1.0
   sqflite_common_ffi: ^2.3.0+4
-  sqflite_common_ffi_web: ^0.4.2+1
+  sqflite_common_ffi_web: ^0.4.0
 
 dev_dependencies:
   flutter_test:

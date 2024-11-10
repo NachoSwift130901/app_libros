@@ -1,10 +1,13 @@
 import 'dart:convert';
 
+import 'package:app_libros/blocs/bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 
 void main() {
-  runApp(const MainApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const AplicacionInyectada());
 }
 
 class MainApp extends StatelessWidget {
@@ -14,7 +17,25 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       title: 'API Demo',
+      
       home: BookSearchPage(),
+    );
+  }
+}
+
+class AplicacionInyectada extends StatelessWidget {
+  const AplicacionInyectada({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'OrganizadorLibros',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.dark(),
+      home: BlocProvider(
+        create: (context) => AppBloc()..add(Inicializado()),
+        child: const BarraNavegacion(),
+      ),
     );
   }
 }
@@ -27,6 +48,7 @@ class BookSearchPage extends StatefulWidget {
 }
 
 class _BookSearchPageState extends State<BookSearchPage> {
+
 
   List books = [];
   TextEditingController searchController = TextEditingController();
@@ -111,5 +133,120 @@ class _BookSearchPageState extends State<BookSearchPage> {
         ],
       ),
     );
+  }
+}
+
+// Barra de Navegacion 
+
+class BarraNavegacion extends StatefulWidget {
+  const BarraNavegacion({super.key});
+
+  @override
+  State<BarraNavegacion> createState() => _BarraNavegacionState();
+}
+
+class _BarraNavegacionState extends State<BarraNavegacion> {
+
+   int _currentIndex = 0;
+
+  String obtenerTitulo() {
+    switch (_currentIndex) {
+      case 0: 
+        return 'Buscar Libros';
+      case 1: 
+        return 'Mis libros';
+      case 2:
+        return 'Reportes';
+      default: 
+        return  'Unknown';
+    }
+  }
+  
+  final List<Widget> _paginas = [
+    const PantallaBuscar(),
+    const PantallaMisLibros(),
+    const PantallaReportes(),
+
+  ];
+
+
+  @override
+  Widget build(BuildContext context) {
+    var estado = context.watch<AppBloc>().state;
+    
+    return  Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        title: Text(obtenerTitulo()),
+      ),
+      body: _paginas[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Colors.black,
+        selectedItemColor: Colors.white,
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.abc),
+            label: 'Buscar',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.abc),
+            label: 'Mis Libros',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.abc),
+            label: 'Reportes',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Pantalla Buscador
+
+class PantallaBuscar extends StatelessWidget {
+  const PantallaBuscar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Text('Hola');
+  }
+}
+
+// Pantalla MisLibros
+
+class PantallaMisLibros extends StatefulWidget {
+  const PantallaMisLibros({super.key});
+
+  @override
+  State<PantallaMisLibros> createState() => _PantallaMisLibrosState();
+}
+
+class _PantallaMisLibrosState extends State<PantallaMisLibros> {
+  @override
+  Widget build(BuildContext context) {
+    return const Text('Hola desde mis libros');
+  }
+}
+
+// Pantalla Reportes
+
+class PantallaReportes extends StatefulWidget {
+  const PantallaReportes({super.key});
+
+  @override
+  State<PantallaReportes> createState() => _PantallaReportesState();
+}
+
+class _PantallaReportesState extends State<PantallaReportes> {
+  @override
+  Widget build(BuildContext context) {
+    return const Text('Hola desde reportes');
   }
 }
