@@ -7,7 +7,7 @@ class Libro with EquatableMixin {
    String genero;
    String portadaUrl;
    DateTime fechaPublicacion;
-   int rating;
+   int? rating;
    String critica;
    bool esPrestado;
    String? prestadoA;

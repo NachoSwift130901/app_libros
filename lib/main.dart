@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+
 import 'package:app_libros/blocs/bloc.dart';
 import 'package:app_libros/modelos/libro.dart';
 import 'package:flutter/material.dart';
@@ -10,19 +11,6 @@ import 'package:intl/intl.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const AplicacionInyectada());
-}
-
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      title: 'API Demo',
-      
-      home: BookSearchPage(),
-    );
-  }
 }
 
 class AplicacionInyectada extends StatelessWidget {
@@ -141,7 +129,7 @@ class _BookSearchPageState extends State<BookSearchPage> {
 // Barra de Navegacion 
 
 class BarraNavegacion extends StatefulWidget {
-  const BarraNavegacion({super.key});
+  const BarraNavegacion({Key? key}) : super(key: key);
 
   @override
   State<BarraNavegacion> createState() => _BarraNavegacionState();
@@ -168,7 +156,6 @@ class _BarraNavegacionState extends State<BarraNavegacion> {
     const PantallaBuscar(),
     const PantallaMisLibros(),
     const PantallaReportes(),
-
   ];
 
 
@@ -320,6 +307,34 @@ class DetalleLibroPage extends StatelessWidget {
     final isbnLista = libro['industryIdentifiers']?.map((id) => id['identifier']).toList() ?? ['No ISBN'];
     final pageCount = libro['pageCount']?.toString() ?? 'N/A';
     final imageUrl = libro['imageLinks']?['thumbnail'] ?? '';
+    final isbn = libro['isbn'] ?? 'Desconocido'; 
+    final titulo = libro['title'] ?? 'Sin título';
+    final autor = libro['authors']?.join(', ') ?? 'Autor desconocido'; 
+    const genero = 'Horror'; 
+    final portadaUrl = imageUrl; 
+    final fechaPublicacion = DateTime.now(); 
+    final totalPaginas = int.tryParse(pageCount) ?? 0;
+   
+   
+   
+    void agregarLibro(String isbn, String titulo, String autor, String genero, String portadaUrl, DateTime fechaPublicacion, int rating, String critica, bool esPrestado, String? prestadoA, String? prestadoDe, DateTime? fechaPrestacion, DateTime? fechaRegreso, DateTime? fechaLectura, int totalPaginas) {
+      context.read<AppBloc>().add(AgregarLibro(
+        isbn: isbn, 
+        titulo: titulo, 
+        genero: genero, 
+        autor: autor, 
+        portadaUrl: portadaUrl, 
+        fechaPublicacion: fechaPublicacion, 
+        rating: rating, 
+        critica: critica, 
+        esPrestado: esPrestado, 
+        prestadoA: prestadoA, 
+        prestadoDe: prestadoDe, 
+        fechaPrestacion: fechaPrestacion, 
+        fechaRegreso: fechaRegreso, 
+        fechaLectura: fechaLectura, 
+        totalPaginas: totalPaginas));
+    }
 
 
     return  Scaffold(
@@ -344,14 +359,21 @@ class DetalleLibroPage extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        
         onPressed: () {
           showModalBottomSheet(
             context: context,
             builder: (BuildContext context) {
-              return Container(
+              return  Container(
                 padding: const EdgeInsets.all(16.0),
-                child: const AgregarModal(),
+                child:  AgregarModal(
+                  isbn: isbn, 
+                  titulo: titulo, 
+                  autor: autor, 
+                  genero: genero, 
+                  portadaUrl: portadaUrl, 
+                  fechaPublicacion: fechaPublicacion, 
+                  totalPaginas: totalPaginas,
+                ),
               );
             }
           );
@@ -363,7 +385,16 @@ class DetalleLibroPage extends StatelessWidget {
 }
 
 class AgregarModal extends StatefulWidget {
-  const AgregarModal({super.key});
+
+  final String isbn; 
+  final String titulo; 
+  final String autor; 
+  final String genero; 
+  final String portadaUrl; 
+  final DateTime fechaPublicacion; 
+  final int totalPaginas;
+
+  const AgregarModal({super.key, required this.isbn, required this.titulo, required this.autor, required this.genero, required this.portadaUrl, required this.fechaPublicacion, required this.totalPaginas});
 
   @override
   State<AgregarModal> createState() => _AgregarModalState();
@@ -378,7 +409,11 @@ class _AgregarModalState extends State<AgregarModal> {
    String _prestadoA = '';
    String _resena = '';
 
-  Future<void> seleccionarFecha(BuildContext context) async {
+  @override
+  Widget build(BuildContext context) {
+
+
+    Future<void> seleccionarFecha(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context, 
       initialDate: DateTime.now(), 
@@ -392,8 +427,37 @@ class _AgregarModalState extends State<AgregarModal> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
+  
+    void guardarLibro() {
+      print('agregar libroooo');
+      context.read<AppBloc>().add(AgregarLibro(
+          // isbn: libro.libro['isbn'], 
+          // titulo: libro.libro['title'], 
+          // genero: 'Horror', 
+          // autor: libro.libro['authors']?.join(',') ?? 'Autor desconocido', 
+          // portadaUrl: libro.libro['imageLinks']?['thumbnail'] ?? '', 
+          // fechaPublicacion: DateTime.parse(libro.libro['publishedDate'] ?? DateTime.now().toString()), 
+          // rating: _rating, 
+          // critica: _resena, 
+          // esPrestado: _isPrestado, 
+          // prestadoA: _isPrestado ? _prestadoA : null, 
+          // prestadoDe: null, 
+          // fechaPrestacion: _isPrestado ? DateTime.now() : null, 
+          // fechaRegreso: _isPrestado ? DateTime.now().add(const Duration(days: 30)) : null, 
+          // fechaLectura: _isLeido ? _fechaSeleccionada : null, 
+          // totalPaginas: int.tryParse(libro.libro['pageCount']?.toString() ?? '0') ?? 0
+          isbn: '1234567890', titulo: 'Título del libro', autor: 'Autor del libro', genero: 'Género', portadaUrl: 'URL de la portada', fechaPublicacion: DateTime.now(), rating: 5, critica: 'Buena crítica', esPrestado: false, prestadoA: null, prestadoDe: null, fechaPrestacion: null, fechaRegreso: null, fechaLectura: null, totalPaginas: 300
+          )
+          
+      );
+    Navigator.pop(context);
+  }
+
+
+
+
+
+
     return  Container(
       padding: const EdgeInsets.all(16.0),
       child:  SingleChildScrollView(
@@ -472,11 +536,7 @@ class _AgregarModalState extends State<AgregarModal> {
             ],
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  
-                });
-              },
+              onPressed: guardarLibro,
               child: const Text('Guardar libro'),
             ),
           ],
@@ -507,12 +567,15 @@ class _PantallaMisLibrosState extends State<PantallaMisLibros> {
 
     var estado = context.watch<AppBloc>().state;
 
-    if(estado is Operacional){
-      libros = (estado).listaLibros.cast<Libro>();
-    }
     if(estado is Inicial){
       return const Center(child: CircularProgressIndicator());
     }
+
+    if(estado is Operacional){
+      libros = (estado).listaLibros.cast<Libro>();
+      
+    }
+
     if(libros.isEmpty){
       return const Center(
         child: Column(
@@ -523,6 +586,10 @@ class _PantallaMisLibrosState extends State<PantallaMisLibros> {
         ),
       );
     }
+
+    
+    
+    
 
     BlocBuilder<AppBloc, AppEstado>(
       builder: (context, state) {
