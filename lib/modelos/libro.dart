@@ -6,15 +6,15 @@ class Libro with EquatableMixin {
    String autor;
    String genero;
    String portadaUrl;
-   DateTime fechaPublicacion;
+   String fechaPublicacion;
    int? rating;
    String critica;
    bool esPrestado;
    String? prestadoA;
    String? prestadoDe;
-   DateTime? fechaPrestacion;
-   DateTime? fechaRegreso;
-   DateTime? fechaLectura;
+   String? fechaPrestacion;
+   String? fechaRegreso;
+   String? fechaLectura;
    int totalPaginas;
 
    factory Libro.fromMap(Map<String, dynamic> map) {
@@ -24,16 +24,16 @@ class Libro with EquatableMixin {
       autor: map['autor']??'', 
       genero: map['genero']??'',
       portadaUrl: map['portadaUrl']??'', 
-      fechaPublicacion: map['fechaPublicacion'], 
-      critica: map['critica'], 
-      esPrestado: map['esPrestado'], 
-      prestadoA: map['prestadoA'], 
-      prestadoDe: map['prestadoDe'], 
-      fechaPrestacion: map['fechaPrestacion'], 
-      fechaRegreso: map['fechaRegreso'], 
-      fechaLectura: map['fechaLectura'], 
-      totalPaginas: map['totalPaginas'], 
-      rating: map['rating']
+      fechaPublicacion: map['fechaPublicacion']??'', 
+      critica: map['critica']??'', 
+      esPrestado: map['esPrestado']??false, 
+      prestadoA: map['prestadoA']??'', 
+      prestadoDe: map['prestadoDe']??'', 
+      fechaPrestacion: map['fechaPrestacion']??'', 
+      fechaRegreso: map['fechaRegreso']??'', 
+      fechaLectura: map['fechaLectura']??'', 
+      totalPaginas: map['totalPaginas']??0, 
+      rating: map['rating']??0
       );
    }
 
