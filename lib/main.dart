@@ -174,6 +174,7 @@ class _BarraNavegacionState extends State<BarraNavegacion> {
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.black,
         selectedItemColor: Colors.white,
+        unselectedItemColor: const Color.fromARGB(255, 153, 153, 153) ,
         currentIndex: _currentIndex,
         onTap: (index) {
           setState(() {
@@ -264,6 +265,7 @@ class _PantallaBuscarState extends State<PantallaBuscar> {
                 final isbnList = libro['industryIdentifiers']?.map((id) => id['identifier']).toList() ?? ['No ISBN'];
                 final pageCount = libro['pageCount']?.toString();
                 final imageUrl = libro['imageLinks']?['thumbnail'] ?? '';
+                
                 return ListTile(
                   leading: imageUrl.isNotEmpty 
                   ? Image.network(
@@ -309,35 +311,13 @@ class DetalleLibroPage extends StatelessWidget {
     final isbnLista = libro['industryIdentifiers']?.map((id) => id['identifier']).toList() ?? ['No ISBN'];
     final pageCount = libro['pageCount']?.toString() ?? 'N/A';
     final imageUrl = libro['imageLinks']?['thumbnail'] ?? '';
-    final isbn = libro['isbn'] ?? 'Desconocido'; 
+    final isbn = libro['industryIdentifiers']?.first['identifier'];
     final titulo = libro['title'] ?? 'Sin título';
     final autor = libro['authors']?.join(', ') ?? 'Autor desconocido'; 
-    const genero = 'Horror'; 
+    final genero = libro['categories'] != null ? libro['categories'].join(', ') : 'Género desconocido';
     final portadaUrl = imageUrl; 
     final fechaPublicacion = DateTime.now(); 
     final totalPaginas = int.tryParse(pageCount) ?? 0;
-   
-   
-   
-    // void agregarLibro(String isbn, String titulo, String autor, String genero, String portadaUrl, String fechaPublicacion, int rating, String critica, bool esPrestado, String? prestadoA, String? prestadoDe, DateTime? fechaPrestacion, DateTime? fechaRegreso, DateTime? fechaLectura, int totalPaginas) {
-    //   context.read<AppBloc>().add(AgregarLibro(
-    //     isbn: isbn, 
-    //     titulo: titulo, 
-    //     genero: genero, 
-    //     autor: autor, 
-    //     portadaUrl: portadaUrl, 
-    //     fechaPublicacion: fechaPublicacion, 
-    //     rating: rating, 
-    //     critica: critica, 
-    //     esPrestado: esPrestado, 
-    //     prestadoA: prestadoA, 
-    //     prestadoDe: prestadoDe, 
-    //     fechaPrestacion: fechaPrestacion, 
-    //     fechaRegreso: fechaRegreso, 
-    //     fechaLectura: fechaLectura, 
-    //     totalPaginas: totalPaginas));
-    // }
-
 
     return  Scaffold(
       appBar: AppBar(
@@ -354,6 +334,8 @@ class DetalleLibroPage extends StatelessWidget {
             const SizedBox(height: 8), 
             Text('Autor: ${libro['authors']?.join(', ') ?? 'Autor desconocido'}', style: const TextStyle(fontSize: 18)), 
             const SizedBox(height: 8), 
+            Text('Género: ${libro['categories']?.join(', ') ?? 'Desconocido'}', style: const TextStyle(fontSize: 18)),
+            const SizedBox(height: 8), 
             Text('ISBN: ${isbnLista.join(', ')}', style: const TextStyle(fontSize: 18)), 
             const SizedBox(height: 8), 
             Text('Páginas: $pageCount', style: const TextStyle(fontSize: 18)),
@@ -362,50 +344,30 @@ class DetalleLibroPage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // showModalBottomSheet(
-          //   context: context,
-          //   builder: (BuildContext context) {
-          //     return  Container(
-          //       padding: const EdgeInsets.all(16.0),
-          //       child:  AgregarModal(
-          //         isbn: isbn, 
-          //         titulo: titulo, 
-          //         autor: autor, 
-          //         genero: genero, 
-          //         portadaUrl: portadaUrl, 
-          //         fechaPublicacion: fechaPublicacion, 
-          //         totalPaginas: totalPaginas,
-          //       ),
-          //     );
-          //   }
-          // );
+          showModalBottomSheet(
+            context: context,
+            builder: (BuildContext context) {
+              return  Container(
+                padding: const EdgeInsets.all(16.0),
+                child:  AgregarModal(
+                  isbn: isbn, 
+                  titulo: titulo, 
+                  autor: autor, 
+                  genero: genero, 
+                  portadaUrl: portadaUrl, 
+                  fechaPublicacion: fechaPublicacion, 
+                  totalPaginas: totalPaginas,
+                ),
+              );
+            }
+          );
 
-      print('agregar libroooo');
-
-      Libro newLibro = Libro(isbn: '1234567890', titulo: 'Título del libro', autor: 'Autor del libro', genero: 'Género', portadaUrl: 'URL de la portada', fechaPublicacion: DateTime.now().toIso8601String(), rating: 5, critica: 'Buena crítica', esPrestado: false, prestadoA: '', prestadoDe: '', fechaPrestacion: '', fechaRegreso: '', fechaLectura: null, totalPaginas: 300);
-
-
-      context.read<AppBloc>().add(AgregarLibro(
-          // isbn: libro.libro['isbn'], 
-          // titulo: libro.libro['title'], 
-          // genero: 'Horror', 
-          // autor: libro.libro['authors']?.join(',') ?? 'Autor desconocido', 
-          // portadaUrl: libro.libro['imageLinks']?['thumbnail'] ?? '', 
-          // fechaPublicacion: DateTime.parse(libro.libro['publishedDate'] ?? DateTime.now().toString()), 
-          // rating: _rating, 
-          // critica: _resena, 
-          // esPrestado: _isPrestado, 
-          // prestadoA: _isPrestado ? _prestadoA : null, 
-          // prestadoDe: null, 
-          // fechaPrestacion: _isPrestado ? DateTime.now() : null, 
-          // fechaRegreso: _isPrestado ? DateTime.now().add(const Duration(days: 30)) : null, 
-          // fechaLectura: _isLeido ? _fechaSeleccionada : null, 
-          // totalPaginas: int.tryParse(libro.libro['pageCount']?.toString() ?? '0') ?? 0
-          libro: newLibro
-          )
+    //   context.read<AppBloc>().add(AgregarLibro(
+    //       libro: newLibro
+    //       )
           
-      );
-    Navigator.pop(context);
+    //   );
+    // Navigator.pop(context);
   
 
         },
@@ -443,7 +405,26 @@ class _AgregarModalState extends State<AgregarModal> {
   @override
   Widget build(BuildContext context) {
 
+    Libro newLibro = Libro(
+      isbn: widget.isbn, 
+      titulo: widget.titulo, 
+      autor: widget.autor, 
+      genero: widget.genero, 
+      portadaUrl: widget.portadaUrl, 
+      fechaPublicacion: widget.fechaPublicacion.toIso8601String(), 
+      rating: _rating, 
+      critica: _resena, 
+      esPrestado: _isPrestado, 
+      prestadoA: '', 
+      prestadoDe: '', 
+      fechaPrestacion: '', 
+      fechaRegreso: '', 
+      fechaLectura: _fechaSeleccionada.toString(), 
+      totalPaginas: widget.totalPaginas);  
 
+    void saludar () {
+    print(newLibro);
+  }
     Future<void> seleccionarFecha(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context, 
@@ -566,16 +547,18 @@ class _AgregarModalState extends State<AgregarModal> {
               )
             ],
             const SizedBox(height: 20),
-            // ElevatedButton(
-            //   onPressed: ,
-            //   child: const Text('Guardar libro'),
-            // ),
+             ElevatedButton(
+              onPressed: saludar,
+              child: const Text('Guardar libro'),
+            ),
           ],
         ),
       ),
     );
   }
 }
+
+
 
 
 

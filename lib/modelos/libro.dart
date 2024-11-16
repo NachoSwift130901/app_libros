@@ -19,7 +19,7 @@ class Libro with EquatableMixin {
 
    factory Libro.fromMap(Map<String, dynamic> map) {
     return Libro(
-      isbn: map['isbn']??0, 
+      isbn: map['isbn']??'', 
       titulo: map['titulo']??'', 
       autor: map['autor']??'', 
       genero: map['genero']??'',
