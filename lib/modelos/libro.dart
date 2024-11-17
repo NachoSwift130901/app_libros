@@ -23,7 +23,7 @@ class Libro with EquatableMixin {
       titulo: map['titulo']??'', 
       autor: map['autor']??'', 
       genero: map['genero']??'',
-      portadaUrl: map['portadaUrl']??'', 
+      portadaUrl: map['portadaURL']??'', 
       fechaPublicacion: map['fechaPublicacion']??'', 
       critica: map['critica']??'', 
       esPrestado: map['esPrestado']??false, 

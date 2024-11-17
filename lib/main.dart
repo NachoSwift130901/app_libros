@@ -423,7 +423,7 @@ class _AgregarModalState extends State<AgregarModal> {
       totalPaginas: widget.totalPaginas);  
 
     void saludar () {
-    print(newLibro);
+    print(newLibro.portadaUrl);
   }
     Future<void> seleccionarFecha(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -440,35 +440,14 @@ class _AgregarModalState extends State<AgregarModal> {
   }
 
   
-  //   void guardarLibro() {
-  //     print('agregar libroooo');
-  //     context.read<AppBloc>().add(AgregarLibro(
-  //         // isbn: libro.libro['isbn'], 
-  //         // titulo: libro.libro['title'], 
-  //         // genero: 'Horror', 
-  //         // autor: libro.libro['authors']?.join(',') ?? 'Autor desconocido', 
-  //         // portadaUrl: libro.libro['imageLinks']?['thumbnail'] ?? '', 
-  //         // fechaPublicacion: DateTime.parse(libro.libro['publishedDate'] ?? DateTime.now().toString()), 
-  //         // rating: _rating, 
-  //         // critica: _resena, 
-  //         // esPrestado: _isPrestado, 
-  //         // prestadoA: _isPrestado ? _prestadoA : null, 
-  //         // prestadoDe: null, 
-  //         // fechaPrestacion: _isPrestado ? DateTime.now() : null, 
-  //         // fechaRegreso: _isPrestado ? DateTime.now().add(const Duration(days: 30)) : null, 
-  //         // fechaLectura: _isLeido ? _fechaSeleccionada : null, 
-  //         // totalPaginas: int.tryParse(libro.libro['pageCount']?.toString() ?? '0') ?? 0
-  //         isbn: '1234567890', titulo: 'Título del libro', autor: 'Autor del libro', genero: 'Género', portadaUrl: 'URL de la portada', fechaPublicacion: DateTime.now().toIso8601String(), rating: 5, critica: 'Buena crítica', esPrestado: false, prestadoA: null, prestadoDe: null, fechaPrestacion: null, fechaRegreso: null, fechaLectura: null, totalPaginas: 300
-  //         )
-          
-  //     );
-  //   Navigator.pop(context);
-  // }
-
-
-
-
-
+    void guardarLibro() {
+      print('Fuck : $newLibro.portadaUrl');
+      context.read<AppBloc>().add(AgregarLibro(
+          libro: newLibro
+          )
+      );
+    Navigator.pop(context);
+  }
 
     return  Container(
       padding: const EdgeInsets.all(16.0),
@@ -548,7 +527,7 @@ class _AgregarModalState extends State<AgregarModal> {
             ],
             const SizedBox(height: 20),
              ElevatedButton(
-              onPressed: saludar,
+              onPressed: guardarLibro,
               child: const Text('Guardar libro'),
             ),
           ],
@@ -557,10 +536,6 @@ class _AgregarModalState extends State<AgregarModal> {
     );
   }
 }
-
-
-
-
 
 
 // Pantalla MisLibros
@@ -600,11 +575,6 @@ class _PantallaMisLibrosState extends State<PantallaMisLibros> {
         ),
       );
     }
-
-    
-    
-    
-
     return Column(
       children: [
         Expanded(
@@ -613,7 +583,18 @@ class _PantallaMisLibrosState extends State<PantallaMisLibros> {
               itemBuilder: (context, index) {
                 final libro = libros[index];
                 return ListTile(
-                  title: Text(libro.isbn),
+                  leading: libro.portadaUrl.isNotEmpty
+                  ? Image.network(libro.portadaUrl, width: 50, fit: BoxFit.cover)
+                  : const Icon(Icons.book),
+                  title: Text(libro.titulo),
+                  subtitle: Text(libro.autor),
+                  trailing: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('ISBN : ${libro.isbn}'),
+                      Text('Paginas : ${libro.totalPaginas}')
+                    ],
+                  ),
                 );
               },
             ),
