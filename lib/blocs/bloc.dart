@@ -27,7 +27,11 @@ class RepositorioBD {
                       autor TEXT NOT NULL,
                       portadaURL TEXT,
                       fechaPublicacion DATE,
-                      totalPaginas INTEGER
+                      totalPaginas INTEGER,
+                      fechaLectura DATE, 
+                      rating INTEGER,
+                      critica TEXT,
+                      esPrestado INTEGER
                     )
                     '''  
                   );
@@ -46,18 +50,6 @@ class RepositorioBD {
                     '''
                   );
 
-                  await db.execute(
-                    ''' 
-                    CREATE TABLE lecturas (
-                      lecturaID INTEGER PRIMARY KEY AUTOINCREMENT,
-                      isbn TEXT, 
-                      fechaLectura DATE, 
-                      rating INTEGER,
-                      critica TEXT,
-                      FOREIGN KEY (isbn) REFERENCES libros(isbn)
-                    )
-                    '''
-                  );
                 }
       )
     );
@@ -104,8 +96,6 @@ class AgregarLibro extends AppEvento {
   final Libro libro;
 
   AgregarLibro({required this.libro});
-
-
 }
 
 class EliminarLibro extends AppEvento {
@@ -114,23 +104,11 @@ class EliminarLibro extends AppEvento {
   EliminarLibro({required this.libro});
 }
 
-class ActualizarLibro extends AppEvento {
-   final String isbn;
-   final String titulo;
-   final String autor;
-   final String portadaUrl;
-   final DateTime fechaPublicacion;
-   final int rating;
-   final String critica;
-   final bool esPrestado;
-   final String? prestadoA;
-   final String? prestadoDe;
-   final DateTime? fechaPrestacion;
-   final DateTime? fechaRegreso;
-   final DateTime? fechaLectura;
-   final int totalPaginas;
+class EditarLibro extends AppEvento {
+  final Libro libro;
 
-  ActualizarLibro({required this.isbn, required this.titulo, required this.autor, required this.portadaUrl, required this.fechaPublicacion, required this.rating, required this.critica, required this.esPrestado, required this.prestadoA, required this.prestadoDe, required this.fechaPrestacion, required this.fechaRegreso, required this.fechaLectura, required this.totalPaginas});
+  EditarLibro({required this.libro});
+
 }
 
 // ----------- BLOC ----------------//
@@ -147,13 +125,19 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
     print(_listaLibros);
   }
 
-    Future<void> agregarLibro(Libro libro) async {
-    // await db.rawInsert('''INSERT INTO libros (isbn, titulo, autor, genero, portadaUrl, fechaPublicacion, rating, critica, esPrestado, prestadoA, prestadoDe, fechaPrestacion, fechaRegreso, fechaLectura, totalPaginas)''', 
-    // [isbn, titulo, autor, genero, portadaUrl, fechaPublicacion, rating, critica, esPrestado, prestadoA, prestadoDe, fechaPrestacion, fechaRegreso, fechaLectura, totalPaginas]);
-    print(libro.portadaUrl);
+  Future<void> todasLasConsultas() async {
+    await repo.inicializar();
+    var resultadoConsulta = await db.rawQuery('SELECT * FROM lecturas');
+    _listaLibros = resultadoConsulta.map((e) => Libro.fromMap(e)).toList();
 
-    await db.rawInsert(''' INSERT INTO libros ( isbn, titulo, genero, autor, portadaURL, fechaPublicacion, totalPaginas ) VALUES (?, ?, ?, ?, ?, ?, ?) ''', 
-    [ libro.isbn, libro.titulo, libro.genero, libro.autor, libro.portadaUrl, libro.fechaPublicacion, libro.totalPaginas ]);
+  }
+
+  
+
+    Future<void> agregarLibro(Libro libro) async {
+    await db.rawInsert(''' INSERT INTO libros ( isbn, titulo, genero, autor, portadaURL, fechaPublicacion, totalPaginas, fechaLectura, rating, critica, esPrestado ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ''', 
+    [ libro.isbn, libro.titulo, libro.genero, libro.autor, libro.portadaUrl, libro.fechaPublicacion.toString(), libro.totalPaginas, 
+    libro.fechaLectura?.toString(), libro.rating, libro.critica, libro.esPrestado ? 1 : 0 ]);
 
     
 
@@ -162,11 +146,6 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
       [ libro.isbn, libro.prestadoA, libro.prestadoDe, libro.fechaPrestacion, libro.fechaRegreso ]);
     }
 
-    // ignore: unnecessary_null_comparison
-    if (libro.fechaLectura != null || libro.rating != null || libro.critica.isNotEmpty) { 
-      await db.rawInsert(''' INSERT INTO lecturas ( isbn, fechaLectura, rating, critica ) VALUES (?, ?, ?, ?) ''', 
-      [ libro.isbn, libro.fechaLectura, libro.rating, libro.critica ]);
-    }
     await todosLosLibros();
   }
 

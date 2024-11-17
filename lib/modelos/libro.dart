@@ -26,14 +26,14 @@ class Libro with EquatableMixin {
       portadaUrl: map['portadaURL']??'', 
       fechaPublicacion: map['fechaPublicacion']??'', 
       critica: map['critica']??'', 
-      esPrestado: map['esPrestado']??false, 
+      esPrestado: map['esPrestado'] == 1, 
       prestadoA: map['prestadoA']??'', 
       prestadoDe: map['prestadoDe']??'', 
       fechaPrestacion: map['fechaPrestacion']??'', 
       fechaRegreso: map['fechaRegreso']??'', 
       fechaLectura: map['fechaLectura']??'', 
       totalPaginas: map['totalPaginas']??0, 
-      rating: map['rating']??0
+      rating: map['rating']??0,
       );
    }
 
