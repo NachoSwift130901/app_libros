@@ -630,6 +630,18 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
     libro = widget.libro;
   }
 
+  Future<void> _editarLibro(Libro libro) async { 
+    final result = await showModalBottomSheet<Libro>( 
+      context: context, 
+      builder: (context) => EditarLibroModal(libro: libro),
+    ); 
+      if (result != null) { 
+        setState(() { 
+          libro = result; 
+      }); 
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -675,12 +687,17 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
           ],
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          _editarLibro(libro);
+        } ,
+        child: const Icon(Icons.edit),
+      ),
     );
   }
 }
 
 class EditarLibroModal extends StatefulWidget {
-
   final Libro libro;
 
   const EditarLibroModal({Key? key,required this.libro,}) : super(key: key);
@@ -703,11 +720,20 @@ class _EditarLibroModalState extends State<EditarLibroModal> {
   super.initState(); 
   _isLeido = widget.libro.fechaLectura != null; 
   _isPrestado = widget.libro.esPrestado; 
-  _fechaSeleccionada = widget.libro.fechaLectura != null ? DateTime.parse(widget.libro.fechaLectura!) : null; 
+  _fechaSeleccionada = _parseFecha(widget.libro.fechaLectura);
   _rating = widget.libro.rating ?? 1; 
   _prestadoA = widget.libro.prestadoA ?? ''; 
   _resena = widget.libro.critica;
  }
+
+  DateTime? _parseFecha(String? fecha) { 
+    if (fecha == null || fecha.isEmpty) return null; 
+    try { return DateTime.parse(fecha); 
+    } 
+    catch (e) {  
+      return null; 
+    }
+  }
 
   Future<void> seleccionarFecha(BuildContext context) async {
      final DateTime? picked = await showDatePicker( 
@@ -756,16 +782,7 @@ class _EditarLibroModalState extends State<EditarLibroModal> {
           mainAxisSize: MainAxisSize.min, 
           crossAxisAlignment: CrossAxisAlignment.start, 
           children: [
-             Text('Título: ${widget.libro.titulo}', style: const TextStyle(fontSize: 18)), 
-             const SizedBox(height: 8), 
-             Text('Autor: ${widget.libro.autor}', style: const TextStyle(fontSize: 18)), 
-             const SizedBox(height: 8), 
-             Text('Género: ${widget.libro.genero}', style: const TextStyle(fontSize: 18)), 
-             const SizedBox(height: 8), 
-             Text('ISBN: ${widget.libro.isbn}', style: const TextStyle(fontSize: 18)), 
-             const SizedBox(height: 8), 
-             Text('Páginas: ${widget.libro.totalPaginas}', style: const TextStyle(fontSize: 18)), 
-             const SizedBox(height: 16), 
+
              SwitchListTile( 
               title: const Text('Es prestado?'), 
               value: _isPrestado, 
