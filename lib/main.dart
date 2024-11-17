@@ -550,6 +550,8 @@ class PantallaMisLibros extends StatefulWidget {
 }
 
 class _PantallaMisLibrosState extends State<PantallaMisLibros> {
+  String _ordenSeleccionado = 'Título';
+
   @override
   Widget build(BuildContext context) {
     List<Libro> libros = [];
@@ -572,8 +574,43 @@ class _PantallaMisLibrosState extends State<PantallaMisLibros> {
         ),
       );
     }
+
+    libros.sort((a, b) { 
+      switch (_ordenSeleccionado) { 
+        case 'Autor': 
+          return a.autor.compareTo(b.autor); 
+        case 'Calificación': 
+          return (b.rating ?? 0).compareTo(a.rating ?? 0);        
+        case 'Fecha': 
+          return DateTime.parse(b.fechaPublicacion).compareTo(DateTime.parse(a.fechaPublicacion)); 
+        default: return a.titulo.compareTo(b.titulo); } });
+
     return Column(
       children: [
+        Padding(
+           padding: const EdgeInsets.all(8.0), 
+           child: Row( 
+            mainAxisAlignment: MainAxisAlignment.spaceBetween, 
+            children: [ 
+              const Text('Ordenar por:'), 
+              DropdownButton<String>( value: _ordenSeleccionado, 
+              onChanged: (String? newValue) { 
+                setState(() 
+              { 
+                _ordenSeleccionado = newValue!; 
+              }); 
+            }, 
+            items: <String>['Título', 'Autor', 'Calificación', 'Fecha'] 
+            .map<DropdownMenuItem<String>>((String value) { 
+              return DropdownMenuItem<String>( 
+                value: value, 
+                child: Text(value), 
+              ); 
+            }).toList(), 
+          ), 
+        ], 
+      ), 
+    ),
         Expanded(
           child: ListView.builder(
             itemCount: libros.length,
