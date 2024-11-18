@@ -9,8 +9,9 @@ import 'package:intl/intl.dart';
 import 'package:app_libros/blocs/bloc.dart';
 import 'package:app_libros/modelos/libro.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  RepositorioBD().inicializar;
   runApp(const AplicacionInyectada());
 }
 
@@ -28,102 +29,6 @@ class AplicacionInyectada extends StatelessWidget {
         child: const MaterialApp(
           home: BarraNavegacion(),
         ),
-      ),
-    );
-  }
-}
-
-class BookSearchPage extends StatefulWidget {
-  const BookSearchPage({super.key});
-
-  @override
-  State<BookSearchPage> createState() => _BookSearchPageState();
-}
-
-class _BookSearchPageState extends State<BookSearchPage> {
-  List books = [];
-  TextEditingController searchController = TextEditingController();
-
-  Future<void> buscarLibros(String query) async {
-    const apiKey = 'AIzaSyANoCFakFV-D0QXg8hQbeKvdlMKxaVH8z8';
-    final url =
-        'https://www.googleapis.com/books/v1/volumes?q=$query&key=$apiKey';
-    final response = await http.get(Uri.parse(url));
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      setState(() {
-        books = data['items'];
-      });
-    } else {
-      print('Error en la solicitud : ${response.statusCode}');
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Buscar Libros'),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: searchController,
-                    decoration: const InputDecoration(
-                      labelText: 'Buscar libro',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: () {
-                    buscarLibros(searchController.text);
-                  },
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: books.length,
-              itemBuilder: (context, index) {
-                final libro = books[index]['volumeInfo'];
-                final isbnList = libro['industryIdentifiers']
-                        ?.map((id) => id['identifier'])
-                        .toList() ??
-                    ['No ISBN'];
-                final pageCount = libro['pageCount']?.toString();
-                final imageUrl = libro['imageLinks']?['thumbnail'] ?? '';
-                return ListTile(
-                  leading: imageUrl.isNotEmpty
-                      ? Image.network(
-                          imageUrl,
-                          width: 50,
-                          fit: BoxFit.cover,
-                        )
-                      : const Icon(Icons.book),
-                  title: Text(libro['title']),
-                  subtitle:
-                      Text(libro['authors']?.join(', ') ?? 'Autor desconocido'),
-                  trailing: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('ISBN: ${isbnList.join(', ')}'),
-                      Text('Páginas: $pageCount'),
-                    ],
-                  ),
-                );
-              },
-            ),
-          )
-        ],
       ),
     );
   }
@@ -162,8 +67,6 @@ class _BarraNavegacionState extends State<BarraNavegacion> {
 
   @override
   Widget build(BuildContext context) {
-    var estado = context.watch<AppBloc>().state;
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.black,
@@ -223,8 +126,6 @@ class _PantallaBuscarState extends State<PantallaBuscar> {
       setState(() {
         books = data['items'];
       });
-    } else {
-      print('Error en la solicitud : ${response.statusCode}');
     }
   }
 
@@ -528,7 +429,6 @@ class _AgregarModalState extends State<AgregarModal> {
                     fechaRegreso: '',
                     fechaLectura: _fechaSeleccionada.toString(),
                     totalPaginas: widget.totalPaginas);
-                print(_rating);
                 guardarLibro(newLibro);
               },
               child: const Text('Guardar libro'),
@@ -554,98 +454,111 @@ class _PantallaMisLibrosState extends State<PantallaMisLibros> {
 
   @override
   Widget build(BuildContext context) {
-    List<Libro> libros = [];
+    return BlocListener<AppBloc, AppEstado>(
+      listener: (context, state) {
+        setState(() {});
+      },
+      child: Builder(
+        builder: (context) {
+          List<Libro> libros = [];
 
-    var estado = context.watch<AppBloc>().state;
+          var estado = context.watch<AppBloc>().state;
 
-    if (estado is Inicial) {
-      return const Center(child: CircularProgressIndicator());
-    }
+          if (estado is Inicial) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-    if (estado is Operacional) {
-      libros = (estado).listaLibros;
-    }
+          if (estado is Operacional) {
+            libros = (estado).listaLibros;
+          }
 
-    if (libros.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [Text('Aun no tienes libros :(')],
-        ),
-      );
-    }
-
-    libros.sort((a, b) {
-      switch (_ordenSeleccionado) {
-        case 'Autor':
-          return a.autor.compareTo(b.autor);
-        case 'Calificación':
-          return (b.rating ?? 0).compareTo(a.rating ?? 0);
-        case 'Fecha':
-          return DateTime.parse(b.fechaPublicacion)
-              .compareTo(DateTime.parse(a.fechaPublicacion));
-        default:
-          return a.titulo.compareTo(b.titulo);
-      }
-    });
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Ordenar por:'),
-              DropdownButton<String>(
-                value: _ordenSeleccionado,
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _ordenSeleccionado = newValue!;
-                  });
-                },
-                items: <String>['Título', 'Autor', 'Calificación', 'Fecha']
-                    .map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
+          if (libros.isEmpty) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [Text('Aun no tienes libros :(')],
               ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            itemCount: libros.length,
-            itemBuilder: (context, index) {
-              final libro = libros[index];
-              return ListTile(
-                leading: libro.portadaUrl.isNotEmpty
-                    ? Image.network(libro.portadaUrl,
-                        width: 50, fit: BoxFit.cover)
-                    : const Icon(Icons.book),
-                title: Text(libro.titulo),
-                subtitle: Text(libro.autor),
-                trailing: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            );
+          }
+
+          libros.sort((a, b) {
+            switch (_ordenSeleccionado) {
+              case 'Autor':
+                return a.autor.compareTo(b.autor);
+              case 'Calificación':
+                return (b.rating ?? 0).compareTo(a.rating ?? 0);
+              case 'Fecha':
+                return DateTime.parse(b.fechaPublicacion)
+                    .compareTo(DateTime.parse(a.fechaPublicacion));
+              default:
+                return a.titulo.compareTo(b.titulo);
+            }
+          });
+
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('ISBN : ${libro.isbn}'),
-                    Text('Paginas : ${libro.totalPaginas}')
+                    const Text('Ordenar por:'),
+                    DropdownButton<String>(
+                      value: _ordenSeleccionado,
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _ordenSeleccionado = newValue!;
+                        });
+                      },
+                      items: <String>[
+                        'Título',
+                        'Autor',
+                        'Calificación',
+                        'Fecha'
+                      ].map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                    ),
                   ],
                 ),
-                onTap: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: ((context) =>
-                              DetalleLibroMisLibrosPage(libro: libro))));
-                },
-              );
-            },
-          ),
-        ),
-      ],
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: libros.length,
+                  itemBuilder: (context, index) {
+                    final libro = libros[index];
+                    return ListTile(
+                      leading: libro.portadaUrl.isNotEmpty
+                          ? Image.network(libro.portadaUrl,
+                              width: 50, fit: BoxFit.cover)
+                          : const Icon(Icons.book),
+                      title: Text(libro.titulo),
+                      subtitle: Text(libro.autor),
+                      trailing: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('ISBN : ${libro.isbn}'),
+                          Text('Paginas : ${libro.totalPaginas}')
+                        ],
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: ((context) =>
+                                    DetalleLibroMisLibrosPage(libro: libro))));
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -684,13 +597,44 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
     }
   }
 
+  void _mostrarModalEliminar(Libro libro) {
+    final outerContext = context;
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Borrar permanentemente'),
+            content:
+                const Text('¿Estás seguro de que deseas eliminar este libro?'),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Cancelar'),
+              ),
+              TextButton(
+                onPressed: () {
+                  outerContext
+                      .read<AppBloc>()
+                      .add(EliminarLibro(isbn: libro.isbn));
+                  Navigator.of(context).pop();
+                  Navigator.of(outerContext).pop();
+                },
+                child: const Text('Eliminar'),
+              )
+            ],
+          );
+        });
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<AppBloc, AppEstado>(
       listener: (context, state) {
-        if(state is Operacional) {
+        if (state is Operacional) {
           int index = state.listaLibros.indexWhere((l) => l.isbn == libro.isbn);
-          if(index != -1) {
+          if (index != -1) {
             setState(() {
               libro = state.listaLibros[index];
             });
@@ -741,11 +685,27 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
             ],
           ),
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            _editarLibro(libro);
-          },
-          child: const Icon(Icons.edit),
+        floatingActionButton: Align(
+          alignment: Alignment.bottomRight,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FloatingActionButton(
+                onPressed: () {
+                  _editarLibro(libro);
+                },
+                child: const Icon(Icons.edit),
+              ),
+              const SizedBox(height: 16),
+              FloatingActionButton(
+                onPressed: () {
+                  _mostrarModalEliminar(libro);
+                },
+                backgroundColor: Colors.red,
+                child: const Icon(Icons.delete),
+              )
+            ],
+          ),
         ),
       ),
     );
