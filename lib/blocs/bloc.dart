@@ -180,8 +180,8 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
     }));
     
     on<EliminarLibro>(((event, emit)  async {
-      eliminarLibro(event.isbn);
-      todosLosLibros();
+      await eliminarLibro(event.isbn);
+      await todosLosLibros();
       emit((Operacional(listaLibros: _listaLibros)));
     }));
 
