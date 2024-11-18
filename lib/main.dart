@@ -575,42 +575,46 @@ class _PantallaMisLibrosState extends State<PantallaMisLibros> {
       );
     }
 
-    libros.sort((a, b) { 
-      switch (_ordenSeleccionado) { 
-        case 'Autor': 
-          return a.autor.compareTo(b.autor); 
-        case 'Calificación': 
-          return (b.rating ?? 0).compareTo(a.rating ?? 0);        
-        case 'Fecha': 
-          return DateTime.parse(b.fechaPublicacion).compareTo(DateTime.parse(a.fechaPublicacion)); 
-        default: return a.titulo.compareTo(b.titulo); } });
+    libros.sort((a, b) {
+      switch (_ordenSeleccionado) {
+        case 'Autor':
+          return a.autor.compareTo(b.autor);
+        case 'Calificación':
+          return (b.rating ?? 0).compareTo(a.rating ?? 0);
+        case 'Fecha':
+          return DateTime.parse(b.fechaPublicacion)
+              .compareTo(DateTime.parse(a.fechaPublicacion));
+        default:
+          return a.titulo.compareTo(b.titulo);
+      }
+    });
 
     return Column(
       children: [
         Padding(
-           padding: const EdgeInsets.all(8.0), 
-           child: Row( 
-            mainAxisAlignment: MainAxisAlignment.spaceBetween, 
-            children: [ 
-              const Text('Ordenar por:'), 
-              DropdownButton<String>( value: _ordenSeleccionado, 
-              onChanged: (String? newValue) { 
-                setState(() 
-              { 
-                _ordenSeleccionado = newValue!; 
-              }); 
-            }, 
-            items: <String>['Título', 'Autor', 'Calificación', 'Fecha'] 
-            .map<DropdownMenuItem<String>>((String value) { 
-              return DropdownMenuItem<String>( 
-                value: value, 
-                child: Text(value), 
-              ); 
-            }).toList(), 
-          ), 
-        ], 
-      ), 
-    ),
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Ordenar por:'),
+              DropdownButton<String>(
+                value: _ordenSeleccionado,
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _ordenSeleccionado = newValue!;
+                  });
+                },
+                items: <String>['Título', 'Autor', 'Calificación', 'Fecha']
+                    .map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
         Expanded(
           child: ListView.builder(
             itemCount: libros.length,
@@ -630,12 +634,13 @@ class _PantallaMisLibrosState extends State<PantallaMisLibros> {
                     Text('Paginas : ${libro.totalPaginas}')
                   ],
                 ),
-              onTap: () {
-                Navigator.push(
-                  context, 
-                  MaterialPageRoute(
-                    builder: ((context) => DetalleLibroMisLibrosPage(libro: libro))));
-              },
+                onTap: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: ((context) =>
+                              DetalleLibroMisLibrosPage(libro: libro))));
+                },
               );
             },
           ),
@@ -667,68 +672,81 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
     libro = widget.libro;
   }
 
-  Future<void> _editarLibro(Libro libro) async { 
-    final result = await showModalBottomSheet<Libro>( 
-      context: context, 
+  Future<void> _editarLibro(Libro libro) async {
+    final result = await showModalBottomSheet<Libro>(
+      context: context,
       builder: (context) => EditarLibroModal(libro: libro),
-    ); 
-      if (result != null) { 
-        setState(() { 
-          libro = result; 
-      }); 
+    );
+    if (result != null) {
+      setState(() {
+        libro = result;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(libro.titulo),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            libro.portadaUrl.isNotEmpty
-                ? Image.network(libro.portadaUrl)
-                : const Icon(Icons.book, size: 100),
-            const SizedBox(height: 16),
-            Text('Título: ${libro.titulo}',
-                style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 8),
-            Text('Autor: ${libro.autor}', style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 8),
-            Text('ISBN: ${libro.isbn}', style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 8),
-            Text('Páginas: ${libro.totalPaginas}',
-                style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 8),
-            Text('Género: ${libro.genero}',
-                style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 8),
-            if (libro.fechaLectura != null)
-              Text('Fecha de Lectura: ${libro.fechaLectura}',
-                  style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 8),
-            Text('Calificación: ${libro.rating}/10',
-                style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 8),
-            if (libro.critica.isNotEmpty)
-              Text('Crítica: ${libro.critica}',
-                  style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 8),
-            if (libro.esPrestado)
-              Text('Prestado a: ${libro.prestadoA}',
-                  style: const TextStyle(fontSize: 18)),
-          ],
+    return BlocListener<AppBloc, AppEstado>(
+      listener: (context, state) {
+        if(state is Operacional) {
+          int index = state.listaLibros.indexWhere((l) => l.isbn == libro.isbn);
+          if(index != -1) {
+            setState(() {
+              libro = state.listaLibros[index];
+            });
+          }
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(libro.titulo),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _editarLibro(libro);
-        } ,
-        child: const Icon(Icons.edit),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              libro.portadaUrl.isNotEmpty
+                  ? Image.network(libro.portadaUrl)
+                  : const Icon(Icons.book, size: 100),
+              const SizedBox(height: 16),
+              Text('Título: ${libro.titulo}',
+                  style: const TextStyle(fontSize: 18)),
+              const SizedBox(height: 8),
+              Text('Autor: ${libro.autor}',
+                  style: const TextStyle(fontSize: 18)),
+              const SizedBox(height: 8),
+              Text('ISBN: ${libro.isbn}', style: const TextStyle(fontSize: 18)),
+              const SizedBox(height: 8),
+              Text('Páginas: ${libro.totalPaginas}',
+                  style: const TextStyle(fontSize: 18)),
+              const SizedBox(height: 8),
+              Text('Género: ${libro.genero}',
+                  style: const TextStyle(fontSize: 18)),
+              const SizedBox(height: 8),
+              if (libro.fechaLectura != null)
+                Text('Fecha de Lectura: ${libro.fechaLectura}',
+                    style: const TextStyle(fontSize: 18)),
+              const SizedBox(height: 8),
+              Text('Calificación: ${libro.rating}/10',
+                  style: const TextStyle(fontSize: 18)),
+              const SizedBox(height: 8),
+              if (libro.critica.isNotEmpty)
+                Text('Crítica: ${libro.critica}',
+                    style: const TextStyle(fontSize: 18)),
+              const SizedBox(height: 8),
+              if (libro.esPrestado)
+                Text('Prestado a: ${libro.prestadoA}',
+                    style: const TextStyle(fontSize: 18)),
+            ],
+          ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            _editarLibro(libro);
+          },
+          child: const Icon(Icons.edit),
+        ),
       ),
     );
   }
@@ -737,166 +755,172 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
 class EditarLibroModal extends StatefulWidget {
   final Libro libro;
 
-  const EditarLibroModal({Key? key,required this.libro,}) : super(key: key);
+  const EditarLibroModal({
+    Key? key,
+    required this.libro,
+  }) : super(key: key);
 
   @override
   State<EditarLibroModal> createState() => _EditarLibroModalState();
-
 }
 
 class _EditarLibroModalState extends State<EditarLibroModal> {
-  late bool _isLeido; 
-  late bool _isPrestado; 
-  DateTime? _fechaSeleccionada; 
-  late int _rating; 
-  late String _prestadoA; 
+  late bool _isLeido;
+  late bool _isPrestado;
+  DateTime? _fechaSeleccionada;
+  late int _rating;
+  late String _prestadoA;
   late String _resena;
 
+  @override
+  void initState() {
+    super.initState();
+    _isLeido = widget.libro.fechaLectura != null;
+    _isPrestado = widget.libro.esPrestado;
+    _fechaSeleccionada = _parseFecha(widget.libro.fechaLectura);
+    _rating = widget.libro.rating ?? 1;
+    _prestadoA = widget.libro.prestadoA ?? '';
+    _resena = widget.libro.critica;
+  }
 
- @override void initState() { 
-  super.initState(); 
-  _isLeido = widget.libro.fechaLectura != null; 
-  _isPrestado = widget.libro.esPrestado; 
-  _fechaSeleccionada = _parseFecha(widget.libro.fechaLectura);
-  _rating = widget.libro.rating ?? 1; 
-  _prestadoA = widget.libro.prestadoA ?? ''; 
-  _resena = widget.libro.critica;
- }
-
-  DateTime? _parseFecha(String? fecha) { 
-    if (fecha == null || fecha.isEmpty) return null; 
-    try { return DateTime.parse(fecha); 
-    } 
-    catch (e) {  
-      return null; 
+  DateTime? _parseFecha(String? fecha) {
+    if (fecha == null || fecha.isEmpty) return null;
+    try {
+      return DateTime.parse(fecha);
+    } catch (e) {
+      return null;
     }
   }
 
   Future<void> seleccionarFecha(BuildContext context) async {
-     final DateTime? picked = await showDatePicker( 
-      context: context, 
-      initialDate: _fechaSeleccionada ?? DateTime.now(), 
-      firstDate: DateTime(1950), 
-      lastDate: DateTime(2101), ); 
-      if (picked != null && picked != _fechaSeleccionada) { 
-        setState(() { 
-          _fechaSeleccionada = picked; 
-      }); 
-    } 
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _fechaSeleccionada ?? DateTime.now(),
+      firstDate: DateTime(1950),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != _fechaSeleccionada) {
+      setState(() {
+        _fechaSeleccionada = picked;
+      });
+    }
   }
 
-  void guardarCambios() { 
-  Libro libroEditado = Libro(
-     isbn: widget.libro.isbn, 
-     titulo: widget.libro.titulo, 
-     autor: widget.libro.autor, 
-     genero: widget.libro.genero, 
-     portadaUrl: widget.libro.portadaUrl, 
-     fechaPublicacion: widget.libro.fechaPublicacion, 
-     critica: _resena, 
-     esPrestado: _isPrestado, 
-     prestadoA: _isPrestado ? _prestadoA : '', 
-     prestadoDe: widget.libro.prestadoDe, 
-     fechaPrestacion: widget.libro.fechaPrestacion, 
-     fechaRegreso: widget.libro.fechaRegreso, 
-     fechaLectura: _isLeido ? _fechaSeleccionada?.toIso8601String() : '', 
-     totalPaginas: widget.libro.totalPaginas, 
-     rating: _rating, );
-     
-    context.read<AppBloc>().add(EditarLibro(
-      libro: libroEditado)); 
-      
-    Navigator.pop(context, libroEditado); }
+  void guardarCambios() {
+    Libro libroEditado = Libro(
+      isbn: widget.libro.isbn,
+      titulo: widget.libro.titulo,
+      autor: widget.libro.autor,
+      genero: widget.libro.genero,
+      portadaUrl: widget.libro.portadaUrl,
+      fechaPublicacion: widget.libro.fechaPublicacion,
+      critica: _resena,
+      esPrestado: _isPrestado,
+      prestadoA: _isPrestado ? _prestadoA : '',
+      prestadoDe: widget.libro.prestadoDe,
+      fechaPrestacion: widget.libro.fechaPrestacion,
+      fechaRegreso: widget.libro.fechaRegreso,
+      fechaLectura: _isLeido ? _fechaSeleccionada?.toIso8601String() : '',
+      totalPaginas: widget.libro.totalPaginas,
+      rating: _rating,
+    );
 
+    context.read<AppBloc>().add(EditarLibro(libro: libroEditado));
 
- @override 
- Widget build(BuildContext context) { 
+    Navigator.pop(context, libroEditado);
+
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-       padding: const EdgeInsets.all(16.0), 
-       child: SingleChildScrollView(
-         child: 
-         Column( 
-          mainAxisSize: MainAxisSize.min, 
-          crossAxisAlignment: CrossAxisAlignment.start, 
+      padding: const EdgeInsets.all(16.0),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-             SwitchListTile( 
-              title: const Text('Es prestado?'), 
-              value: _isPrestado, 
-              onChanged: (bool value) { 
+            SwitchListTile(
+              title: const Text('Es prestado?'),
+              value: _isPrestado,
+              onChanged: (bool value) {
                 setState(() {
-                   _isPrestado = value; 
-                   }); 
-                }, 
-              ), 
-              if (_isPrestado) 
+                  _isPrestado = value;
+                });
+              },
+            ),
+            if (_isPrestado)
               TextField(
-                 decoration: const InputDecoration(
-                 labelText: 'Prestado a'), 
-                 controller: 
-                 TextEditingController(text: _prestadoA), 
-                 onChanged: (value) { 
-                  setState(() { 
-                    _prestadoA = value; 
-                  }); 
-                }, 
-              ), 
-              SwitchListTile( 
-                title: const Text('Marcar como leído'), 
-                value: _isLeido, 
-                onChanged: (bool value) { 
-                  setState(() { 
-                    _isLeido = value; 
-                  }); 
-                }, 
-              ), 
-              if (_isLeido) ...[ 
-                ListTile( 
-                  title: const Text('Fecha de lectura'), 
-                  subtitle: Text( _fechaSeleccionada == null ? 'Selecciona una fecha' : DateFormat.yMMMd().format(_fechaSeleccionada!), ), 
-                  trailing: const Icon(Icons.calendar_today), 
-                  onTap: () => seleccionarFecha(context), 
-                ), 
-              ListTile( 
-                title: const Text('Calificar libro'), 
-                subtitle: Text('$_rating/10'), 
-                trailing: DropdownButton<int>( 
-                  value: _rating, 
-                  items: List.generate(10, (index) => index + 1) 
-                  .map((value) => DropdownMenuItem<int>(
-                     value: value, 
-                     child: Text('$value'), 
-                    )) .toList(), 
-                    onChanged: (value) { 
-                      setState(() { 
-                        _rating = value!; 
-                        }); 
-                    }, 
-                ), 
-              ), 
-              TextField( 
-                decoration: const InputDecoration( 
-                  labelText: 'Reseña', 
-                ), 
-                maxLines: 3, 
-                controller: TextEditingController(text: _resena), 
+                decoration: const InputDecoration(labelText: 'Prestado a'),
+                controller: TextEditingController(text: _prestadoA),
                 onChanged: (value) {
-                   setState(() { 
-                    _resena = value; 
-                  }); 
-                }, 
-              ), 
-            ], 
-            const SizedBox(height: 20), 
-            ElevatedButton( 
-              onPressed: guardarCambios, 
-              child: const Text('Guardar cambios'), 
-            ), 
-          ], 
-        ), 
-      ), 
-    ); 
-  } 
+                  setState(() {
+                    _prestadoA = value;
+                  });
+                },
+              ),
+            SwitchListTile(
+              title: const Text('Marcar como leído'),
+              value: _isLeido,
+              onChanged: (bool value) {
+                setState(() {
+                  _isLeido = value;
+                });
+              },
+            ),
+            if (_isLeido) ...[
+              ListTile(
+                title: const Text('Fecha de lectura'),
+                subtitle: Text(
+                  _fechaSeleccionada == null
+                      ? 'Selecciona una fecha'
+                      : DateFormat.yMMMd().format(_fechaSeleccionada!),
+                ),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: () => seleccionarFecha(context),
+              ),
+              ListTile(
+                title: const Text('Calificar libro'),
+                subtitle: Text('$_rating/10'),
+                trailing: DropdownButton<int>(
+                  value: _rating,
+                  items: List.generate(10, (index) => index + 1)
+                      .map((value) => DropdownMenuItem<int>(
+                            value: value,
+                            child: Text('$value'),
+                          ))
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _rating = value!;
+                    });
+                  },
+                ),
+              ),
+              TextField(
+                decoration: const InputDecoration(
+                  labelText: 'Reseña',
+                ),
+                maxLines: 3,
+                controller: TextEditingController(text: _resena),
+                onChanged: (value) {
+                  setState(() {
+                    _resena = value;
+                  });
+                },
+              ),
+            ],
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: guardarCambios,
+              child: const Text('Guardar cambios'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // Pantalla Reportes

@@ -50,7 +50,7 @@ class RepositorioBD {
                     '''
                   );
 
-                }
+        }
       )
     );
     
@@ -134,7 +134,7 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
 
   
 
-    Future<void> agregarLibro(Libro libro) async {
+  Future<void> agregarLibro(Libro libro) async {
     await db.rawInsert(''' INSERT INTO libros ( isbn, titulo, genero, autor, portadaURL, fechaPublicacion, totalPaginas, fechaLectura, rating, critica, esPrestado ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ''', 
     [ libro.isbn, libro.titulo, libro.genero, libro.autor, libro.portadaUrl, libro.fechaPublicacion.toString(), libro.totalPaginas, 
     libro.fechaLectura?.toString(), libro.rating, libro.critica, libro.esPrestado ? 1 : 0 ]);
@@ -148,6 +148,13 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
 
     await todosLosLibros();
   }
+
+  Future<void> editarLibro(Libro libro) async { 
+  await db.rawUpdate(''' UPDATE libros SET titulo = ?, genero = ?, autor = ?, portadaURL = ?, fechaPublicacion = ?, totalPaginas = ?, fechaLectura = ?, rating = ?, critica = ?, esPrestado = ? WHERE isbn = ? ''', 
+  [ libro.titulo, libro.genero, libro.autor, libro.portadaUrl, libro.fechaPublicacion, libro.totalPaginas, libro.fechaLectura, libro.rating, libro.critica, libro.esPrestado ? 1 : 0, libro.isbn ]); 
+  
+  }
+
 
   // onEVENTOS //
   AppBloc() : super(Inicial()) {
@@ -165,6 +172,17 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
     }));
     
     on<EliminarLibro>(((event, emit)  async {
+      
+      emit((Operacional(listaLibros: _listaLibros)));
+    }));
+
+    on<EditarLibro>(((event, emit)  async {
+      await editarLibro(event.libro);
+      await todosLosLibros();
+
+
+
+
       
       emit((Operacional(listaLibros: _listaLibros)));
     }));
