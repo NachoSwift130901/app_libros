@@ -8,10 +8,10 @@ import 'package:intl/intl.dart';
 
 import 'package:app_libros/blocs/bloc.dart';
 import 'package:app_libros/modelos/libro.dart';
+import 'package:charts_flutter/flutter.dart' as charts;
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  RepositorioBD().inicializar;
   runApp(const AplicacionInyectada());
 }
 
@@ -452,35 +452,36 @@ class PantallaMisLibros extends StatefulWidget {
 class _PantallaMisLibrosState extends State<PantallaMisLibros> {
   String _ordenSeleccionado = 'Título';
 
+  
+
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AppBloc, AppEstado>(
-      listener: (context, state) {
-        setState(() {});
-      },
-      child: Builder(
-        builder: (context) {
-          List<Libro> libros = [];
 
-          var estado = context.watch<AppBloc>().state;
+    List<Libro> libros = [];
+    var estado = context.watch<AppBloc>().state;
 
-          if (estado is Inicial) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    if (estado is Operacional) {
+        libros = (estado).listaLibros;
 
-          if (estado is Operacional) {
-            libros = (estado).listaLibros;
-          }
+    }
 
-          if (libros.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [Text('Aun no tienes libros :(')],
-              ),
-            );
-          }
+    if (estado is Inicial) {
+        return const Center(child: CircularProgressIndicator());
+    }
 
+    if (libros.isEmpty) {
+      return const Center(
+        child: Column(
+           mainAxisAlignment: MainAxisAlignment.center,
+           children: [Text('Aun no tienes libros :(')],
+         ),
+       );
+    }
+
+
+
+    return BlocBuilder<AppBloc, AppEstado>(
+        builder: (context, state) {
           libros.sort((a, b) {
             switch (_ordenSeleccionado) {
               case 'Autor':
@@ -558,8 +559,8 @@ class _PantallaMisLibrosState extends State<PantallaMisLibros> {
             ],
           );
         },
-      ),
-    );
+      );
+    
   }
 }
 
@@ -893,8 +894,121 @@ class PantallaReportes extends StatefulWidget {
 }
 
 class _PantallaReportesState extends State<PantallaReportes> {
+  String _criterioSeleccionado = 'Autor que me ha gustado más';
   @override
   Widget build(BuildContext context) {
-    return const Text('Hola desde reportes');
+    List<Libro> libros = [];
+
+    var estado = context.watch<AppBloc>().state;
+
+    if(estado is Operacional) {
+      libros = estado.listaLibros;
+    }
+
+    if (libros.isEmpty) { 
+      return Scaffold( 
+        appBar: AppBar( 
+          title: const Text('Reportes'),
+        ), 
+        body: const Center( 
+          child: Text('Aún no tienes libros suficientes para generar reportes :('), 
+        ), 
+      ); 
+    }
+
+    Map<String, double> datosReporte = _generarDatosReporte(libros);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Reportes'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Generar reporte por:'),
+                DropdownButton<String>(
+                  value: _criterioSeleccionado,
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _criterioSeleccionado = newValue!;
+                    });
+                  },
+                  items: <String>[
+                    'Autor que me ha gustado más', 
+                    'Género que me gusta más', 
+                    'Género que se repite más', 
+                    'Saga o serie más larga', 
+                    'Total de páginas leídas por año'
+                  ].map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+            Expanded(
+              child: _crearGrafica(datosReporte),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Map<String, double> _generarDatosReporte(List<Libro> libros) {
+    Map<String, double> datos = {};
+    switch (_criterioSeleccionado) { 
+      case 'Autor que me ha gustado más': 
+      datos = _calcularPromedioCalificacionesPorAutor(libros); 
+        break; 
+      case 'Género que me gusta más': 
+      case 'Género que se repite más': 
+      case 'Saga o serie más larga': 
+      case 'Total de páginas leídas por año': 
+        break; 
+      default: datos = {}; 
+    } return datos;
+  }
+
+  Map<String, double> _calcularPromedioCalificacionesPorAutor(List<Libro> libros) {
+    Map<String, List<int>> calificacionesPorAutor = {};
+    for (var libro in libros) {
+      if(!calificacionesPorAutor.containsKey(libro.autor)) {
+        calificacionesPorAutor[libro.autor] = [];
+      }
+      calificacionesPorAutor[libro.autor]!.add(libro.rating!);
+    }
+
+    Map<String, double> promedioPorAutor = {};
+    calificacionesPorAutor.forEach((autor, calificaciones) {
+      double suma = calificaciones.fold(0, (a, b) => a + b);
+      double promedio = suma / calificaciones.length;
+      promedioPorAutor[autor] = promedio;
+    });
+    return promedioPorAutor;
+  }
+
+  Widget _crearGrafica(Map<String, double> datos) {
+    List<charts.Series<MapEntry<String,double>, String>> series = [
+      charts.Series<MapEntry<String, double>, String>(
+        id: 'Reporte',
+        data: datos.entries.toList(),
+        domainFn: (MapEntry<String, double> entry, _) => entry.key,
+        measureFn: (MapEntry<String, double> entry, _) => entry.value,
+        labelAccessorFn: (MapEntry<String, double> entry, _) => '${entry.key}: ${entry.value.toStringAsFixed(2)}',
+      )
+    ];
+
+    return charts.PieChart(
+      series,
+      animate: true,
+      defaultRenderer: charts.ArcRendererConfig(arcRendererDecorators: [charts.ArcLabelDecorator()]),
+    );
   }
 }
