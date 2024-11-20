@@ -1,14 +1,12 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
-
+import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart' as material;
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-
 import 'package:app_libros/blocs/bloc.dart';
 import 'package:app_libros/modelos/libro.dart';
-import 'package:charts_flutter/flutter.dart' as charts;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,7 +22,7 @@ class AplicacionInyectada extends StatelessWidget {
       title: 'OrganizadorLibros',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(),
-      home: BlocProvider(
+      home: material.BlocProvider(
         create: (context) => AppBloc()..add(Inicializado()),
         child: const MaterialApp(
           home: BarraNavegacion(),
@@ -480,7 +478,7 @@ class _PantallaMisLibrosState extends State<PantallaMisLibros> {
 
 
 
-    return BlocBuilder<AppBloc, AppEstado>(
+    return material.BlocBuilder<AppBloc, AppEstado>(
         builder: (context, state) {
           libros.sort((a, b) {
             switch (_ordenSeleccionado) {
@@ -631,7 +629,7 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AppBloc, AppEstado>(
+    return material.BlocListener<AppBloc, AppEstado>(
       listener: (context, state) {
         if (state is Operacional) {
           int index = state.listaLibros.indexWhere((l) => l.isbn == libro.isbn);
@@ -894,10 +892,12 @@ class PantallaReportes extends StatefulWidget {
 }
 
 class _PantallaReportesState extends State<PantallaReportes> {
-  final String _criterioSeleccionado = 'Género que más me gusta';
+  String _criterioSeleccionado = 'Género que más me gusta';
+  DateTimeRange? _rangoFechas;
   @override
   Widget build(BuildContext context) {
     List<Libro> libros = [];
+
 
     var estado = context.watch<AppBloc>().state;
 
@@ -909,9 +909,7 @@ class _PantallaReportesState extends State<PantallaReportes> {
       return const Center( 
           child: Text('Aún no tienes libros suficientes para generar reportes :('), 
         ); 
-      
     }
-
 
     final series = _generarDatosParaGrafica(libros);
 
@@ -929,9 +927,32 @@ class _PantallaReportesState extends State<PantallaReportes> {
                 ),
               ],
               onChanged: (value) {
-                // Si decides manejar más filtros
+                setState(() {
+                  _criterioSeleccionado = value!;    
+                });
               },
             ),
+            IconButton(
+              icon: const Icon(Icons.date_range),
+              onPressed: () async {
+                DateTimeRange? picked = await showDateRangePicker(
+                  context: context,
+                  firstDate: DateTime(2024, 1, 1),
+                  lastDate: DateTime(2024, 12, 31),
+                  initialDateRange: DateTimeRange(
+                    start: DateTime(2024,1,1),
+                    end: DateTime(2024,12,31),
+                  ),
+                );
+                if(picked != null) {
+                  setState(() {
+                    _rangoFechas = picked;
+                  });
+                }
+              },
+            ),
+            if(_rangoFechas != null)
+              Text('Seleccionado: ${_rangoFechas!.start.toLocal()} - ${_rangoFechas!.end.toLocal()}'),
             const SizedBox(height: 20), // Espacio entre el dropdown y el gráfico
              
             Expanded(
@@ -968,10 +989,18 @@ class _PantallaReportesState extends State<PantallaReportes> {
       );
   }
 
-}
+  List<charts.Series<PieChartData, String>> _generarDatosParaGrafica(List<Libro> libros) {
+    // Filtrar libros por rango de fechas si se ha seleccionado 
+    if (_rangoFechas != null) { 
+      libros = libros.where((libro) { 
+      final fechaPublicacion = DateTime.parse(libro.fechaPublicacion); 
+      return fechaPublicacion.isAfter(_rangoFechas!.start) && fechaPublicacion.isBefore(_rangoFechas!.end); 
+      }).toList(); 
+    }
 
-  List<charts.Series<PieChartData, String>> _generarDatosParaGrafica(
-      List<Libro> libros) {
+
+
+
     // Generar datos para la gráfica de pastel
     Map<String, double> generoPromedios = {};
     for (var libro in libros) {
@@ -1011,9 +1040,11 @@ class _PantallaReportesState extends State<PantallaReportes> {
       ),
     ];
   }
+}
 
 
-  class PieChartData {
+
+class PieChartData {
     final String genero;
     final double promedio;
 
