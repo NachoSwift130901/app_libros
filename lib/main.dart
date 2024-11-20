@@ -894,7 +894,7 @@ class PantallaReportes extends StatefulWidget {
 }
 
 class _PantallaReportesState extends State<PantallaReportes> {
-  String _criterioSeleccionado = 'Autor que me ha gustado más';
+  final String _criterioSeleccionado = 'Género que más me gusta';
   @override
   Widget build(BuildContext context) {
     List<Libro> libros = [];
@@ -906,109 +906,116 @@ class _PantallaReportesState extends State<PantallaReportes> {
     }
 
     if (libros.isEmpty) { 
-      return Scaffold( 
-        appBar: AppBar( 
-          title: const Text('Reportes'),
-        ), 
-        body: const Center( 
+      return const Center( 
           child: Text('Aún no tienes libros suficientes para generar reportes :('), 
-        ), 
-      ); 
+        ); 
+      
     }
 
-    Map<String, double> datosReporte = _generarDatosReporte(libros);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Reportes'),
-      ),
-      body: Padding(
+    final series = _generarDatosParaGrafica(libros);
+
+    return Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Generar reporte por:'),
-                DropdownButton<String>(
-                  value: _criterioSeleccionado,
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      _criterioSeleccionado = newValue!;
-                    });
-                  },
-                  items: <String>[
-                    'Autor que me ha gustado más', 
-                    'Género que me gusta más', 
-                    'Género que se repite más', 
-                    'Saga o serie más larga', 
-                    'Total de páginas leídas por año'
-                  ].map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
+            DropdownButton<String>(
+              value: _criterioSeleccionado,
+              items: const [
+                DropdownMenuItem(
+                  value: 'Género que más me gusta',
+                  child: Text('Género que más me gusta'),
                 ),
               ],
+              onChanged: (value) {
+                // Si decides manejar más filtros
+              },
             ),
+            const SizedBox(height: 20), // Espacio entre el dropdown y el gráfico
+             
             Expanded(
-              child: _crearGrafica(datosReporte),
+              child: charts.PieChart<String>(
+                series,
+                animate: true,
+                defaultRenderer: charts.ArcRendererConfig<String>(
+                  arcWidth: 60,
+                  arcRendererDecorators: [
+                    charts.ArcLabelDecorator(
+                      labelPosition: charts.ArcLabelPosition.inside,
+                    ),
+                  ],
+                ),
+                behaviors: [
+                  charts.DatumLegend(
+                    outsideJustification: charts.OutsideJustification.endDrawArea,
+                    horizontalFirst: false,
+                    desiredMaxRows: 2,
+                    cellPadding: const EdgeInsets.only(right: 4.0, bottom: 4.0),
+                    entryTextStyle: charts.TextStyleSpec(
+                      color: charts.MaterialPalette.purple.shadeDefault,
+                      fontFamily: 'Georgia',
+                      fontSize: 11,
+                    )
+                  ),
+                  charts.SelectNearest(),
+                  charts.DomainHighlighter(),
+                ],
+              ),
             )
           ],
         ),
-      ),
-    );
+      );
   }
 
-  Map<String, double> _generarDatosReporte(List<Libro> libros) {
-    Map<String, double> datos = {};
-    switch (_criterioSeleccionado) { 
-      case 'Autor que me ha gustado más': 
-      datos = _calcularPromedioCalificacionesPorAutor(libros); 
-        break; 
-      case 'Género que me gusta más': 
-      case 'Género que se repite más': 
-      case 'Saga o serie más larga': 
-      case 'Total de páginas leídas por año': 
-        break; 
-      default: datos = {}; 
-    } return datos;
-  }
+}
 
-  Map<String, double> _calcularPromedioCalificacionesPorAutor(List<Libro> libros) {
-    Map<String, List<int>> calificacionesPorAutor = {};
+  List<charts.Series<PieChartData, String>> _generarDatosParaGrafica(
+      List<Libro> libros) {
+    // Generar datos para la gráfica de pastel
+    Map<String, double> generoPromedios = {};
     for (var libro in libros) {
-      if(!calificacionesPorAutor.containsKey(libro.autor)) {
-        calificacionesPorAutor[libro.autor] = [];
+      if (libro.rating != null) {
+        generoPromedios.update(
+          libro.genero,
+          (value) => value + libro.rating!,
+          ifAbsent: () => libro.rating!.toDouble(),
+        );
       }
-      calificacionesPorAutor[libro.autor]!.add(libro.rating!);
     }
 
-    Map<String, double> promedioPorAutor = {};
-    calificacionesPorAutor.forEach((autor, calificaciones) {
-      double suma = calificaciones.fold(0, (a, b) => a + b);
-      double promedio = suma / calificaciones.length;
-      promedioPorAutor[autor] = promedio;
+    // Calcular promedio por género
+    Map<String, double> promediosFinales = {};
+    Map<String, int> conteoGeneros = {};
+    for (var libro in libros) {
+      if (libro.rating != null) {
+        conteoGeneros.update(libro.genero, (value) => value + 1, ifAbsent: () => 1);
+      }
+    }
+    generoPromedios.forEach((genero, sumaRatings) {
+      promediosFinales[genero] = sumaRatings / conteoGeneros[genero]!;
     });
-    return promedioPorAutor;
-  }
 
-  Widget _crearGrafica(Map<String, double> datos) {
-    List<charts.Series<MapEntry<String,double>, String>> series = [
-      charts.Series<MapEntry<String, double>, String>(
-        id: 'Reporte',
-        data: datos.entries.toList(),
-        domainFn: (MapEntry<String, double> entry, _) => entry.key,
-        measureFn: (MapEntry<String, double> entry, _) => entry.value,
-        labelAccessorFn: (MapEntry<String, double> entry, _) => '${entry.key}: ${entry.value.toStringAsFixed(2)}',
-      )
+    // Crear datos para la gráfica
+    final data = promediosFinales.entries
+        .map((entry) => PieChartData(entry.key, entry.value))
+        .toList();
+
+    return [
+      charts.Series<PieChartData, String>(
+        id: 'Géneros',
+        data: data,
+        domainFn: (PieChartData entry, _) => entry.genero,
+        measureFn: (PieChartData entry, _) => entry.promedio,
+        labelAccessorFn: (PieChartData entry, _) =>'${entry.genero}: ${entry.promedio.toStringAsFixed(1)}',
+      ),
     ];
-
-    return charts.PieChart(
-      series,
-      animate: true,
-      defaultRenderer: charts.ArcRendererConfig(arcRendererDecorators: [charts.ArcLabelDecorator()]),
-    );
   }
-}
+
+
+  class PieChartData {
+    final String genero;
+    final double promedio;
+
+    PieChartData(this.genero, this.promedio);
+  }
