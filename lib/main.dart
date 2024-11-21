@@ -925,6 +925,10 @@ class _PantallaReportesState extends State<PantallaReportes> {
                   value: 'Género que más me gusta',
                   child: Text('Género que más me gusta'),
                 ),
+                DropdownMenuItem(
+                  value: 'Género que más se repite',
+                  child: Text('Género que más se repite'),
+                ),
               ],
               onChanged: (value) {
                 setState(() {
@@ -998,8 +1002,23 @@ class _PantallaReportesState extends State<PantallaReportes> {
       }).toList(); 
     }
 
+    if (_criterioSeleccionado == 'Género que más se repite') { 
+      // Generar datos para la gráfica de pastel basada en el conteo de géneros 
+      Map<String, int> conteoGeneros = {}; 
+      for (var libro in libros) { 
+        conteoGeneros.update(libro.genero, (value) => value + 1, ifAbsent: () => 1); 
+      } 
 
-
+      final data = conteoGeneros.entries .map((entry) => PieChartData(entry.key, entry.value.toDouble())) .toList(); 
+      return [ charts.Series<PieChartData, String>(
+         id: 'Géneros Repetidos', 
+         data: data, 
+         domainFn: (PieChartData entry, _) => entry.genero, 
+         measureFn: (PieChartData entry, _) => entry.promedio, 
+         labelAccessorFn: (PieChartData entry, _) => '${entry.genero}: ${entry.promedio.toStringAsFixed(1)}', 
+         ), 
+      ]; 
+    }
 
     // Generar datos para la gráfica de pastel
     Map<String, double> generoPromedios = {};
