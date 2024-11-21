@@ -450,115 +450,104 @@ class PantallaMisLibros extends StatefulWidget {
 class _PantallaMisLibrosState extends State<PantallaMisLibros> {
   String _ordenSeleccionado = 'Título';
 
-  
-
   @override
   Widget build(BuildContext context) {
-
     List<Libro> libros = [];
     var estado = context.watch<AppBloc>().state;
 
     if (estado is Operacional) {
-        libros = (estado).listaLibros;
-
+      libros = (estado).listaLibros;
     }
 
     if (estado is Inicial) {
-        return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (libros.isEmpty) {
       return const Center(
         child: Column(
-           mainAxisAlignment: MainAxisAlignment.center,
-           children: [Text('Aun no tienes libros :(')],
-         ),
-       );
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [Text('Aun no tienes libros :(')],
+        ),
+      );
     }
 
-
-
     return material.BlocBuilder<AppBloc, AppEstado>(
-        builder: (context, state) {
-          libros.sort((a, b) {
-            switch (_ordenSeleccionado) {
-              case 'Autor':
-                return a.autor.compareTo(b.autor);
-              case 'Calificación':
-                return (b.rating ?? 0).compareTo(a.rating ?? 0);
-              case 'Fecha':
-                return DateTime.parse(b.fechaPublicacion)
-                    .compareTo(DateTime.parse(a.fechaPublicacion));
-              default:
-                return a.titulo.compareTo(b.titulo);
-            }
-          });
+      builder: (context, state) {
+        libros.sort((a, b) {
+          switch (_ordenSeleccionado) {
+            case 'Autor':
+              return a.autor.compareTo(b.autor);
+            case 'Calificación':
+              return (b.rating ?? 0).compareTo(a.rating ?? 0);
+            case 'Fecha':
+              return DateTime.parse(b.fechaPublicacion)
+                  .compareTo(DateTime.parse(a.fechaPublicacion));
+            default:
+              return a.titulo.compareTo(b.titulo);
+          }
+        });
 
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Ordenar por:'),
-                    DropdownButton<String>(
-                      value: _ordenSeleccionado,
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          _ordenSeleccionado = newValue!;
-                        });
-                      },
-                      items: <String>[
-                        'Título',
-                        'Autor',
-                        'Calificación',
-                        'Fecha'
-                      ].map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Ordenar por:'),
+                  DropdownButton<String>(
+                    value: _ordenSeleccionado,
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        _ordenSeleccionado = newValue!;
+                      });
+                    },
+                    items: <String>['Título', 'Autor', 'Calificación', 'Fecha']
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: libros.length,
+                itemBuilder: (context, index) {
+                  final libro = libros[index];
+                  return ListTile(
+                    leading: libro.portadaUrl.isNotEmpty
+                        ? Image.network(libro.portadaUrl,
+                            width: 50, fit: BoxFit.cover)
+                        : const Icon(Icons.book),
+                    title: Text(libro.titulo),
+                    subtitle: Text(libro.autor),
+                    trailing: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('ISBN : ${libro.isbn}'),
+                        Text('Paginas : ${libro.totalPaginas}')
+                      ],
                     ),
-                  ],
-                ),
+                    onTap: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: ((context) =>
+                                  DetalleLibroMisLibrosPage(libro: libro))));
+                    },
+                  );
+                },
               ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: libros.length,
-                  itemBuilder: (context, index) {
-                    final libro = libros[index];
-                    return ListTile(
-                      leading: libro.portadaUrl.isNotEmpty
-                          ? Image.network(libro.portadaUrl,
-                              width: 50, fit: BoxFit.cover)
-                          : const Icon(Icons.book),
-                      title: Text(libro.titulo),
-                      subtitle: Text(libro.autor),
-                      trailing: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('ISBN : ${libro.isbn}'),
-                          Text('Paginas : ${libro.totalPaginas}')
-                        ],
-                      ),
-                      onTap: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: ((context) =>
-                                    DetalleLibroMisLibrosPage(libro: libro))));
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          );
-        },
-      );
-    
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -898,126 +887,264 @@ class _PantallaReportesState extends State<PantallaReportes> {
   Widget build(BuildContext context) {
     List<Libro> libros = [];
 
-
     var estado = context.watch<AppBloc>().state;
 
-    if(estado is Operacional) {
+    if (estado is Operacional) {
       libros = estado.listaLibros;
     }
 
-    if (libros.isEmpty) { 
-      return const Center( 
-          child: Text('Aún no tienes libros suficientes para generar reportes :('), 
-        ); 
+    if (libros.isEmpty) {
+      return const Center(
+        child:
+            Text('Aún no tienes libros suficientes para generar reportes :('),
+      );
     }
 
     final series = _generarDatosParaGrafica(libros);
 
     return Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            DropdownButton<String>(
-              value: _criterioSeleccionado,
-              items: const [
-                DropdownMenuItem(
-                  value: 'Género que más me gusta',
-                  child: Text('Género que más me gusta'),
-                ),
-                DropdownMenuItem(
-                  value: 'Género que más se repite',
-                  child: Text('Género que más se repite'),
-                ),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  _criterioSeleccionado = value!;    
-                });
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.date_range),
-              onPressed: () async {
-                DateTimeRange? picked = await showDateRangePicker(
-                  context: context,
-                  firstDate: DateTime(2024, 1, 1),
-                  lastDate: DateTime(2024, 12, 31),
-                  initialDateRange: DateTimeRange(
-                    start: DateTime(2024,1,1),
-                    end: DateTime(2024,12,31),
-                  ),
-                );
-                if(picked != null) {
-                  setState(() {
-                    _rangoFechas = picked;
-                  });
-                }
-              },
-            ),
-            if(_rangoFechas != null)
-              Text('Seleccionado: ${_rangoFechas!.start.toLocal()} - ${_rangoFechas!.end.toLocal()}'),
-            const SizedBox(height: 20), // Espacio entre el dropdown y el gráfico
-             
-            Expanded(
-              child: charts.PieChart<String>(
-                series,
-                animate: true,
-                defaultRenderer: charts.ArcRendererConfig<String>(
-                  arcWidth: 60,
-                  arcRendererDecorators: [
-                    charts.ArcLabelDecorator(
-                      labelPosition: charts.ArcLabelPosition.inside,
-                    ),
-                  ],
-                ),
-                behaviors: [
-                  charts.DatumLegend(
-                    outsideJustification: charts.OutsideJustification.endDrawArea,
-                    horizontalFirst: false,
-                    desiredMaxRows: 2,
-                    cellPadding: const EdgeInsets.only(right: 4.0, bottom: 4.0),
-                    entryTextStyle: charts.TextStyleSpec(
-                      color: charts.MaterialPalette.purple.shadeDefault,
-                      fontFamily: 'Georgia',
-                      fontSize: 11,
-                    )
-                  ),
-                  charts.SelectNearest(),
-                  charts.DomainHighlighter(),
-                ],
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          DropdownButton<String>(
+            value: _criterioSeleccionado,
+            items: const [
+              DropdownMenuItem(
+                value: 'Género que más me gusta',
+                child: Text('Género que más me gusta'),
               ),
-            )
-          ],
-        ),
-      );
+              DropdownMenuItem(
+                value: 'Género que más se repite',
+                child: Text('Género que más se repite'),
+              ),
+              DropdownMenuItem(
+                value: 'Autor que más me gusta',
+                child: Text('Autor que más me gusta'),
+              ),
+              DropdownMenuItem(
+                value: 'Páginas leídas en el año',
+                child: Text('Páginas leídas en el año'),
+              ),
+            ],
+            onChanged: (value) {
+              setState(() {
+                _criterioSeleccionado = value!;
+              });
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.date_range),
+            onPressed: () async {
+              {
+                if (_criterioSeleccionado == 'Páginas leídas en el año') {
+                  int? selectedYear = await showYearPicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2024),
+                  );
+                  if(selectedYear != null) {
+                    setState(() {
+                    _rangoFechas = DateTimeRange(
+                      start: DateTime(selectedYear, 1, 1),
+                      end: DateTime(selectedYear, 12, 31),
+                    );
+                  });
+                  }
+                  
+                } else {
+                  DateTimeRange? picked = await showDateRangePicker(
+                    context: context,
+                    firstDate: DateTime(1950, 1, 1),
+                    lastDate: DateTime(2024, 12, 31),
+                    initialDateRange: DateTimeRange(
+                      start: DateTime(2024, 1, 1),
+                      end: DateTime(2024, 12, 31),
+                    ),
+                  );
+                  if (picked != null) {
+                    setState(() {
+                      _rangoFechas = picked;
+                    });
+                  }
+                }
+              }
+            },
+          ),
+          if (_rangoFechas != null)
+           Column( 
+            crossAxisAlignment: CrossAxisAlignment.start, 
+            children: [ 
+              Text( 
+                _criterioSeleccionado == 'Páginas leídas en el año' 
+              ? 'Seleccionado: ${_rangoFechas!.start.year}' 
+              : 'Seleccionado: ${_rangoFechas!.start.toLocal().toIso8601String().substring(0, 10)} - ${_rangoFechas!.end.toLocal().toIso8601String().substring(0, 10)}',   
+              ),
+                     
+            ], 
+          ),
+          const SizedBox(height: 20), // Espacio entre el dropdown y el gráfico
+
+          Expanded(
+            child: _criterioSeleccionado == 'Páginas leídas en el año'
+                ? charts.BarChart(
+                    series,
+                    animate: true,
+                    barGroupingType: charts.BarGroupingType.grouped,
+                    behaviors: [
+                      charts.ChartTitle('Meses del Año',
+                          behaviorPosition: charts.BehaviorPosition.bottom,
+                          titleOutsideJustification:
+                              charts.OutsideJustification.middleDrawArea),
+                      charts.ChartTitle('Páginas Leídas',
+                          behaviorPosition: charts.BehaviorPosition.start,
+                          titleOutsideJustification:
+                              charts.OutsideJustification.middleDrawArea),
+                    ],
+                    domainAxis: charts.OrdinalAxisSpec(
+                      viewport: charts.OrdinalViewport('01', 12),
+                      renderSpec: const charts.SmallTickRendererSpec(
+                          labelRotation: 45,
+                          labelStyle: charts.TextStyleSpec(
+                            fontSize: 12,
+                            color: charts.MaterialPalette.black,
+                          )),
+                    ),
+                  )
+                : charts.PieChart<String>(
+                    series,
+                    animate: true,
+                    defaultRenderer: charts.ArcRendererConfig<String>(
+                      arcWidth: 60,
+                      arcRendererDecorators: [
+                        charts.ArcLabelDecorator(
+                          labelPosition: charts.ArcLabelPosition.inside,
+                        ),
+                      ],
+                    ),
+                    behaviors: [
+                      charts.DatumLegend(
+                        outsideJustification:
+                            charts.OutsideJustification.endDrawArea,
+                        horizontalFirst: false,
+                        desiredMaxRows: 2,
+                        cellPadding:
+                            const EdgeInsets.only(right: 4.0, bottom: 4.0),
+                        entryTextStyle: charts.TextStyleSpec(
+                          color: charts.MaterialPalette.purple.shadeDefault,
+                          fontFamily: 'Georgia',
+                          fontSize: 11,
+                        ),
+                      ),
+                      charts.SelectNearest(),
+                      charts.DomainHighlighter(),
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
   }
 
-  List<charts.Series<PieChartData, String>> _generarDatosParaGrafica(List<Libro> libros) {
-    // Filtrar libros por rango de fechas si se ha seleccionado 
-    if (_rangoFechas != null) { 
-      libros = libros.where((libro) { 
-      final fechaPublicacion = DateTime.parse(libro.fechaPublicacion); 
-      return fechaPublicacion.isAfter(_rangoFechas!.start) && fechaPublicacion.isBefore(_rangoFechas!.end); 
-      }).toList(); 
+  int _calcularTotalPaginasLeidasEnAno(List<Libro> libros, int ano) { int totalPaginas = 0; for (var libro in libros) { final fechaPublicacion = DateTime.parse(libro.fechaPublicacion); if (fechaPublicacion.year == ano) { totalPaginas += libro.totalPaginas; } } return totalPaginas; } 
+
+  List<charts.Series<dynamic, String>> _generarDatosParaGrafica(
+      List<Libro> libros) {
+    // Filtrar libros por rango de fechas si se ha seleccionado
+    if (_rangoFechas != null) {
+      libros = libros.where((libro) {
+        final fechaPublicacion = DateTime.parse(libro.fechaPublicacion);
+        return fechaPublicacion.isAfter(_rangoFechas!.start) &&
+            fechaPublicacion.isBefore(_rangoFechas!.end);
+      }).toList();
     }
 
-    if (_criterioSeleccionado == 'Género que más se repite') { 
-      // Generar datos para la gráfica de pastel basada en el conteo de géneros 
-      Map<String, int> conteoGeneros = {}; 
-      for (var libro in libros) { 
-        conteoGeneros.update(libro.genero, (value) => value + 1, ifAbsent: () => 1); 
-      } 
+    if (_criterioSeleccionado == 'Autor que más me gusta') {
+      // Generar datos para la gráfica de pastel basada en autores
+      Map<String, int> conteoAutores = {};
+      for (var libro in libros) {
+        conteoAutores.update(
+          libro.autor,
+          (value) => value + 1,
+          ifAbsent: () => 1,
+        );
+      }
+      final data = conteoAutores.entries
+          .map((entry) => PieChartData(entry.key, entry.value.toDouble()))
+          .toList();
+      return [
+        charts.Series<PieChartData, String>(
+          id: 'Autores',
+          data: data,
+          domainFn: (PieChartData entry, _) => entry.genero,
+          measureFn: (PieChartData entry, _) => entry.promedio,
+          labelAccessorFn: (PieChartData entry, _) =>
+              '${entry.genero}: ${entry.promedio.toInt()}',
+        ),
+      ];
+    }
 
-      final data = conteoGeneros.entries .map((entry) => PieChartData(entry.key, entry.value.toDouble())) .toList(); 
-      return [ charts.Series<PieChartData, String>(
-         id: 'Géneros Repetidos', 
-         data: data, 
-         domainFn: (PieChartData entry, _) => entry.genero, 
-         measureFn: (PieChartData entry, _) => entry.promedio, 
-         labelAccessorFn: (PieChartData entry, _) => '${entry.genero}: ${entry.promedio.toStringAsFixed(1)}', 
-         ), 
-      ]; 
+    if (_criterioSeleccionado == 'Género que más se repite') {
+      // Generar datos para la gráfica de pastel basada en el conteo de géneros
+      Map<String, int> conteoGeneros = {};
+      for (var libro in libros) {
+        conteoGeneros.update(libro.genero, (value) => value + 1,
+            ifAbsent: () => 1);
+      }
+
+      final data = conteoGeneros.entries
+          .map((entry) => PieChartData(entry.key, entry.value.toDouble()))
+          .toList();
+      return [
+        charts.Series<PieChartData, String>(
+          id: 'Géneros Repetidos',
+          data: data,
+          domainFn: (PieChartData entry, _) => entry.genero,
+          measureFn: (PieChartData entry, _) => entry.promedio,
+          labelAccessorFn: (PieChartData entry, _) =>
+              '${entry.genero}: ${entry.promedio.toStringAsFixed(1)}',
+        ),
+      ];
+    }
+
+    if (_criterioSeleccionado == 'Páginas leídas en el año') {
+      // Generar datos para la gráfica de barras basada en las páginas leídas
+      Map<String, int> paginasLeidasPorMes = {
+        '01': 0,
+        '02': 0,
+        '03': 0,
+        '04': 0,
+        '05': 0,
+        '06': 0,
+        '07': 0,
+        '08': 0,
+        '09': 0,
+        '10': 0,
+        '11': 0,
+        '12': 0,
+      };
+      for (var libro in libros) {
+        final mes = libro.fechaPublicacion.substring(5, 7);
+        paginasLeidasPorMes.update(
+          mes,
+          (value) => value + libro.totalPaginas,
+          ifAbsent: () => libro.totalPaginas,
+        );
+      }
+      final data = paginasLeidasPorMes.entries
+          .map((entry) => BarChartData(entry.key, entry.value.toDouble()))
+          .toList();
+      return [
+        charts.Series<BarChartData, String>(
+          id: 'Páginas Leídas',
+          data: data,
+          domainFn: (BarChartData entry, _) => entry.mes,
+          measureFn: (BarChartData entry, _) => entry.paginas,
+          labelAccessorFn: (BarChartData entry, _) =>
+              '${entry.mes}: ${entry.paginas.toInt()}',
+        ),
+      ];
     }
 
     // Generar datos para la gráfica de pastel
@@ -1037,7 +1164,8 @@ class _PantallaReportesState extends State<PantallaReportes> {
     Map<String, int> conteoGeneros = {};
     for (var libro in libros) {
       if (libro.rating != null) {
-        conteoGeneros.update(libro.genero, (value) => value + 1, ifAbsent: () => 1);
+        conteoGeneros.update(libro.genero, (value) => value + 1,
+            ifAbsent: () => 1);
       }
     }
     generoPromedios.forEach((genero, sumaRatings) {
@@ -1055,17 +1183,55 @@ class _PantallaReportesState extends State<PantallaReportes> {
         data: data,
         domainFn: (PieChartData entry, _) => entry.genero,
         measureFn: (PieChartData entry, _) => entry.promedio,
-        labelAccessorFn: (PieChartData entry, _) =>'${entry.genero}: ${entry.promedio.toStringAsFixed(1)}',
+        labelAccessorFn: (PieChartData entry, _) =>
+            '${entry.genero}: ${entry.promedio.toStringAsFixed(1)}',
       ),
     ];
   }
 }
 
-
-
 class PieChartData {
-    final String genero;
-    final double promedio;
+  final String genero;
+  final double promedio;
 
-    PieChartData(this.genero, this.promedio);
-  }
+  PieChartData(this.genero, this.promedio);
+}
+
+class BarChartData {
+  final String mes;
+  final double paginas;
+
+  BarChartData(this.mes, this.paginas);
+}
+
+Future<int?> showYearPicker({
+  required BuildContext context,
+  required DateTime initialDate,
+  required DateTime firstDate,
+  required DateTime lastDate,
+}) async {
+  int? selectedYear;
+  await showDialog<int>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Selecciona el año'),
+        content: SizedBox(
+          width: 300,
+          height: 300,
+          child: YearPicker(
+            firstDate: firstDate,
+            lastDate: lastDate,
+            initialDate: initialDate,
+            selectedDate: initialDate,
+            onChanged: (DateTime dateTime) {
+              selectedYear = dateTime.year;
+              Navigator.pop(context);
+            },
+          ),
+        ),
+      );
+    },
+  );
+  return selectedYear;
+}
