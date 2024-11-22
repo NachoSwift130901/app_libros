@@ -930,6 +930,14 @@ class _PantallaReportesState extends State<PantallaReportes> {
             onChanged: (value) {
               setState(() {
                 _criterioSeleccionado = value!;
+                if (_criterioSeleccionado == 'Páginas leídas en el año') {
+                  _rangoFechas = DateTimeRange(
+                    start: DateTime(DateTime.now().year, 1, 1),
+                    end: DateTime(DateTime.now().year, 12, 31),
+                  );
+                } else {
+                  _rangoFechas = null;
+                }
               });
             },
           ),
@@ -944,15 +952,14 @@ class _PantallaReportesState extends State<PantallaReportes> {
                     firstDate: DateTime(2000),
                     lastDate: DateTime(2024),
                   );
-                  if(selectedYear != null) {
+                  if (selectedYear != null) {
                     setState(() {
-                    _rangoFechas = DateTimeRange(
-                      start: DateTime(selectedYear, 1, 1),
-                      end: DateTime(selectedYear, 12, 31),
-                    );
-                  });
+                      _rangoFechas = DateTimeRange(
+                        start: DateTime(selectedYear, 1, 1),
+                        end: DateTime(selectedYear, 12, 31),
+                      );
+                    });
                   }
-                  
                 } else {
                   DateTimeRange? picked = await showDateRangePicker(
                     context: context,
@@ -973,17 +980,19 @@ class _PantallaReportesState extends State<PantallaReportes> {
             },
           ),
           if (_rangoFechas != null)
-           Column( 
-            crossAxisAlignment: CrossAxisAlignment.start, 
-            children: [ 
-              Text( 
-                _criterioSeleccionado == 'Páginas leídas en el año' 
-              ? 'Seleccionado: ${_rangoFechas!.start.year}' 
-              : 'Seleccionado: ${_rangoFechas!.start.toLocal().toIso8601String().substring(0, 10)} - ${_rangoFechas!.end.toLocal().toIso8601String().substring(0, 10)}',   
-              ),
-                     
-            ], 
-          ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _criterioSeleccionado == 'Páginas leídas en el año'
+                      ? 'Seleccionado: ${_rangoFechas!.start.year}'
+                      : 'Seleccionado: ${_rangoFechas!.start.toLocal().toIso8601String().substring(0, 10)} - ${_rangoFechas!.end.toLocal().toIso8601String().substring(0, 10)}',
+                ),
+                if(_criterioSeleccionado == 'Páginas leídas en el año')
+              Text('Total de páginas leídas: ${_calcularTotalPaginasLeidas(libros, _rangoFechas)}'),
+                  
+              ],
+            ),
           const SizedBox(height: 20), // Espacio entre el dropdown y el gráfico
 
           Expanded(
@@ -1047,16 +1056,29 @@ class _PantallaReportesState extends State<PantallaReportes> {
     );
   }
 
-  int _calcularTotalPaginasLeidasEnAno(List<Libro> libros, int ano) { int totalPaginas = 0; for (var libro in libros) { final fechaPublicacion = DateTime.parse(libro.fechaPublicacion); if (fechaPublicacion.year == ano) { totalPaginas += libro.totalPaginas; } } return totalPaginas; } 
+int _calcularTotalPaginasLeidas(List<Libro> libros, DateTimeRange? rangoFechas) {
+  int totalPaginas = 0;
+  for (var libro in libros) {
+    final fechaLectura = DateTime.parse(libro.fechaLectura!);
+    if (rangoFechas != null &&
+        (fechaLectura.isAfter(rangoFechas.start) || fechaLectura.isAtSameMomentAs(rangoFechas.start)) &&
+        (fechaLectura.isBefore(rangoFechas.end) || fechaLectura.isAtSameMomentAs(rangoFechas.end))) {
+      totalPaginas += libro.totalPaginas;
+    }
+  }
+  return totalPaginas;
+}
+
+
 
   List<charts.Series<dynamic, String>> _generarDatosParaGrafica(
       List<Libro> libros) {
     // Filtrar libros por rango de fechas si se ha seleccionado
     if (_rangoFechas != null) {
       libros = libros.where((libro) {
-        final fechaPublicacion = DateTime.parse(libro.fechaPublicacion);
-        return fechaPublicacion.isAfter(_rangoFechas!.start) &&
-            fechaPublicacion.isBefore(_rangoFechas!.end);
+        final fechaLectura = DateTime.parse(libro.fechaLectura!);
+        return fechaLectura.isAfter(_rangoFechas!.start) &&
+            fechaLectura.isBefore(_rangoFechas!.end);
       }).toList();
     }
 
@@ -1108,44 +1130,49 @@ class _PantallaReportesState extends State<PantallaReportes> {
       ];
     }
 
-    if (_criterioSeleccionado == 'Páginas leídas en el año') {
-      // Generar datos para la gráfica de barras basada en las páginas leídas
-      Map<String, int> paginasLeidasPorMes = {
-        '01': 0,
-        '02': 0,
-        '03': 0,
-        '04': 0,
-        '05': 0,
-        '06': 0,
-        '07': 0,
-        '08': 0,
-        '09': 0,
-        '10': 0,
-        '11': 0,
-        '12': 0,
-      };
-      for (var libro in libros) {
-        final mes = libro.fechaPublicacion.substring(5, 7);
-        paginasLeidasPorMes.update(
-          mes,
-          (value) => value + libro.totalPaginas,
-          ifAbsent: () => libro.totalPaginas,
-        );
-      }
-      final data = paginasLeidasPorMes.entries
-          .map((entry) => BarChartData(entry.key, entry.value.toDouble()))
-          .toList();
-      return [
-        charts.Series<BarChartData, String>(
-          id: 'Páginas Leídas',
-          data: data,
-          domainFn: (BarChartData entry, _) => entry.mes,
-          measureFn: (BarChartData entry, _) => entry.paginas,
-          labelAccessorFn: (BarChartData entry, _) =>
-              '${entry.mes}: ${entry.paginas.toInt()}',
-        ),
-      ];
+if (_criterioSeleccionado == 'Páginas leídas en el año') {
+  // Generar datos para la gráfica de barras basada en las páginas leídas
+  Map<String, int> paginasLeidasPorMes = {
+    '01': 0,
+    '02': 0,
+    '03': 0,
+    '04': 0,
+    '05': 0,
+    '06': 0,
+    '07': 0,
+    '08': 0,
+    '09': 0,
+    '10': 0,
+    '11': 0,
+    '12': 0,
+  };
+  for (var libro in libros) {
+    final fechaLectura = DateTime.parse(libro.fechaLectura!);
+    if (_rangoFechas != null &&
+        (fechaLectura.isAfter(_rangoFechas!.start) || fechaLectura.isAtSameMomentAs(_rangoFechas!.start)) &&
+        (fechaLectura.isBefore(_rangoFechas!.end) || fechaLectura.isAtSameMomentAs(_rangoFechas!.end))) {
+      final mes = fechaLectura.month.toString().padLeft(2, '0');
+      paginasLeidasPorMes.update(
+        mes,
+        (value) => value + libro.totalPaginas,
+        ifAbsent: () => libro.totalPaginas,
+      );
     }
+  }
+  final data = paginasLeidasPorMes.entries
+      .map((entry) => BarChartData(entry.key, entry.value.toDouble()))
+      .toList();
+  return [
+    charts.Series<BarChartData, String>(
+      id: 'Páginas Leídas',
+      data: data,
+      domainFn: (BarChartData entry, _) => entry.mes,
+      measureFn: (BarChartData entry, _) => entry.paginas,
+      labelAccessorFn: (BarChartData entry, _) => '${entry.mes}: ${entry.paginas.toInt()}',
+    ),
+  ];
+}
+
 
     // Generar datos para la gráfica de pastel
     Map<String, double> generoPromedios = {};
