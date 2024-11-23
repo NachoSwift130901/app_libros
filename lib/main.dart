@@ -42,7 +42,7 @@ class BarraNavegacion extends StatefulWidget {
 }
 
 class _BarraNavegacionState extends State<BarraNavegacion> {
-  int _currentIndex = 0;
+  int _currentIndex = 1;
 
   String obtenerTitulo() {
     switch (_currentIndex) {
@@ -309,10 +309,15 @@ class AgregarModal extends StatefulWidget {
 class _AgregarModalState extends State<AgregarModal> {
   bool _isLeido = false;
   bool _isPrestado = false;
+  bool _isPrestadoA = true;
+  bool _isPrestadoDe = false;
   DateTime? _fechaSeleccionada;
   int _rating = 1;
   String _prestadoA = '';
+  String _prestadoDe = '';
   String _resena = '';
+  DateTime? _fechaPrestacion;
+  DateTime? _fechaRegreso;
 
   @override
   Widget build(BuildContext context) {
@@ -330,7 +335,76 @@ class _AgregarModalState extends State<AgregarModal> {
       }
     }
 
+    Future<void> seleccionarFechaPrestacion(BuildContext context) async {
+      final DateTime? picked = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime(1950),
+        lastDate: DateTime(2101),
+      );
+      if (picked != null && picked != _fechaPrestacion) {
+        setState(() {
+          _fechaPrestacion = picked;
+        });
+      }
+    }
+
+    Future<void> seleccionarFechaRegreso(BuildContext context) async {
+      final DateTime? picked = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime(1950),
+        lastDate: DateTime(2101),
+      );
+      if (picked != null && picked != _fechaRegreso) {
+        setState(() {
+          _fechaRegreso = picked;
+        });
+      }
+    }
+
+    bool validarFormulario() {
+      if (_isPrestado) {
+        if ((_isPrestadoA && _prestadoA.isEmpty) ||
+            (_isPrestadoDe && _prestadoDe.isEmpty)) {
+          return false;
+        }
+        if (_fechaPrestacion == null) {
+          return false;
+        }
+      }
+      if (_isLeido && _fechaSeleccionada == null) {
+        return false;
+      }
+      return true;
+    }
+
+    void mostrarAlertaError(String mensaje) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Error'),
+            content: Text(mensaje),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+    }
+
     void guardarLibro(Libro newLibro) {
+      if (!validarFormulario()) {
+        mostrarAlertaError(
+            'Todos los campos necesarios deben estar completos.');
+        return;
+      }
       context.read<AppBloc>().add(AgregarLibro(libro: newLibro));
       Navigator.pop(context);
     }
@@ -351,15 +425,84 @@ class _AgregarModalState extends State<AgregarModal> {
                 });
               },
             ),
-            if (_isPrestado)
-              TextField(
-                decoration: const InputDecoration(labelText: 'Prestado a'),
-                onChanged: (value) {
+            if (_isPrestado) ...[
+              SwitchListTile(
+                title: const Text('Prestado A'),
+                value: _isPrestadoA,
+                onChanged: (bool value) {
                   setState(() {
-                    _prestadoA = value;
+                    _isPrestadoA = value;
+                    if (value) {
+                      _isPrestadoDe = false;
+                    }
                   });
                 },
               ),
+              SwitchListTile(
+                title: const Text('Prestado de'),
+                value: _isPrestadoDe,
+                onChanged: (bool value) {
+                  setState(() {
+                    _isPrestadoDe = value;
+                    if (value) {
+                      _isPrestadoA = false;
+                    }
+                  });
+                },
+              ),
+              if (_isPrestadoA) ...[
+                TextField(
+                  decoration: const InputDecoration(labelText: 'Prestado a'),
+                  onChanged: (value) {
+                    setState(() {
+                      _prestadoA = value;
+                    });
+                  },
+                ),
+                ListTile(
+                  title: const Text('Fecha de Prestación'),
+                  subtitle: Text(_fechaPrestacion == null
+                      ? 'Selecciona una fecha'
+                      : DateFormat.yMMMd().format(_fechaPrestacion!)),
+                  trailing: const Icon(Icons.calendar_today),
+                  onTap: () => seleccionarFechaPrestacion(context),
+                ),
+                ListTile(
+                  title: const Text('Fecha de Regreso'),
+                  subtitle: Text(_fechaRegreso == null
+                      ? 'Selecciona una fecha'
+                      : DateFormat.yMMMd().format(_fechaRegreso!)),
+                  trailing: const Icon(Icons.calendar_today),
+                  onTap: () => seleccionarFechaRegreso(context),
+                ),
+              ],
+              if (_isPrestadoDe) ...[
+                TextField(
+                  decoration: const InputDecoration(labelText: 'Prestado de'),
+                  onChanged: (value) {
+                    setState(() {
+                      _prestadoDe = value;
+                    });
+                  },
+                ),
+                ListTile(
+                  title: const Text('Fecha de Prestación'),
+                  subtitle: Text(_fechaPrestacion == null
+                      ? 'Selecciona una fecha'
+                      : DateFormat.yMMMd().format(_fechaPrestacion!)),
+                  trailing: const Icon(Icons.calendar_today),
+                  onTap: () => seleccionarFechaPrestacion(context),
+                ),
+                ListTile(
+                  title: const Text('Fecha de Regreso'),
+                  subtitle: Text(_fechaRegreso == null
+                      ? 'Selecciona una fecha'
+                      : DateFormat.yMMMd().format(_fechaRegreso!)),
+                  trailing: const Icon(Icons.calendar_today),
+                  onTap: () => seleccionarFechaRegreso(context),
+                ),
+              ],
+            ],
             SwitchListTile(
               title: const Text('Marcar como leido'),
               value: _isLeido,
@@ -988,9 +1131,9 @@ class _PantallaReportesState extends State<PantallaReportes> {
                       ? 'Seleccionado: ${_rangoFechas!.start.year}'
                       : 'Seleccionado: ${_rangoFechas!.start.toLocal().toIso8601String().substring(0, 10)} - ${_rangoFechas!.end.toLocal().toIso8601String().substring(0, 10)}',
                 ),
-                if(_criterioSeleccionado == 'Páginas leídas en el año')
-              Text('Total de páginas leídas: ${_calcularTotalPaginasLeidas(libros, _rangoFechas)}'),
-                  
+                if (_criterioSeleccionado == 'Páginas leídas en el año')
+                  Text(
+                      'Total de páginas leídas: ${_calcularTotalPaginasLeidas(libros, _rangoFechas)}'),
               ],
             ),
           const SizedBox(height: 20), // Espacio entre el dropdown y el gráfico
@@ -1056,20 +1199,21 @@ class _PantallaReportesState extends State<PantallaReportes> {
     );
   }
 
-int _calcularTotalPaginasLeidas(List<Libro> libros, DateTimeRange? rangoFechas) {
-  int totalPaginas = 0;
-  for (var libro in libros) {
-    final fechaLectura = DateTime.parse(libro.fechaLectura!);
-    if (rangoFechas != null &&
-        (fechaLectura.isAfter(rangoFechas.start) || fechaLectura.isAtSameMomentAs(rangoFechas.start)) &&
-        (fechaLectura.isBefore(rangoFechas.end) || fechaLectura.isAtSameMomentAs(rangoFechas.end))) {
-      totalPaginas += libro.totalPaginas;
+  int _calcularTotalPaginasLeidas(
+      List<Libro> libros, DateTimeRange? rangoFechas) {
+    int totalPaginas = 0;
+    for (var libro in libros) {
+      final fechaLectura = DateTime.parse(libro.fechaLectura!);
+      if (rangoFechas != null &&
+          (fechaLectura.isAfter(rangoFechas.start) ||
+              fechaLectura.isAtSameMomentAs(rangoFechas.start)) &&
+          (fechaLectura.isBefore(rangoFechas.end) ||
+              fechaLectura.isAtSameMomentAs(rangoFechas.end))) {
+        totalPaginas += libro.totalPaginas;
+      }
     }
+    return totalPaginas;
   }
-  return totalPaginas;
-}
-
-
 
   List<charts.Series<dynamic, String>> _generarDatosParaGrafica(
       List<Libro> libros) {
@@ -1130,49 +1274,51 @@ int _calcularTotalPaginasLeidas(List<Libro> libros, DateTimeRange? rangoFechas) 
       ];
     }
 
-if (_criterioSeleccionado == 'Páginas leídas en el año') {
-  // Generar datos para la gráfica de barras basada en las páginas leídas
-  Map<String, int> paginasLeidasPorMes = {
-    '01': 0,
-    '02': 0,
-    '03': 0,
-    '04': 0,
-    '05': 0,
-    '06': 0,
-    '07': 0,
-    '08': 0,
-    '09': 0,
-    '10': 0,
-    '11': 0,
-    '12': 0,
-  };
-  for (var libro in libros) {
-    final fechaLectura = DateTime.parse(libro.fechaLectura!);
-    if (_rangoFechas != null &&
-        (fechaLectura.isAfter(_rangoFechas!.start) || fechaLectura.isAtSameMomentAs(_rangoFechas!.start)) &&
-        (fechaLectura.isBefore(_rangoFechas!.end) || fechaLectura.isAtSameMomentAs(_rangoFechas!.end))) {
-      final mes = fechaLectura.month.toString().padLeft(2, '0');
-      paginasLeidasPorMes.update(
-        mes,
-        (value) => value + libro.totalPaginas,
-        ifAbsent: () => libro.totalPaginas,
-      );
+    if (_criterioSeleccionado == 'Páginas leídas en el año') {
+      // Generar datos para la gráfica de barras basada en las páginas leídas
+      Map<String, int> paginasLeidasPorMes = {
+        '01': 0,
+        '02': 0,
+        '03': 0,
+        '04': 0,
+        '05': 0,
+        '06': 0,
+        '07': 0,
+        '08': 0,
+        '09': 0,
+        '10': 0,
+        '11': 0,
+        '12': 0,
+      };
+      for (var libro in libros) {
+        final fechaLectura = DateTime.parse(libro.fechaLectura!);
+        if (_rangoFechas != null &&
+            (fechaLectura.isAfter(_rangoFechas!.start) ||
+                fechaLectura.isAtSameMomentAs(_rangoFechas!.start)) &&
+            (fechaLectura.isBefore(_rangoFechas!.end) ||
+                fechaLectura.isAtSameMomentAs(_rangoFechas!.end))) {
+          final mes = fechaLectura.month.toString().padLeft(2, '0');
+          paginasLeidasPorMes.update(
+            mes,
+            (value) => value + libro.totalPaginas,
+            ifAbsent: () => libro.totalPaginas,
+          );
+        }
+      }
+      final data = paginasLeidasPorMes.entries
+          .map((entry) => BarChartData(entry.key, entry.value.toDouble()))
+          .toList();
+      return [
+        charts.Series<BarChartData, String>(
+          id: 'Páginas Leídas',
+          data: data,
+          domainFn: (BarChartData entry, _) => entry.mes,
+          measureFn: (BarChartData entry, _) => entry.paginas,
+          labelAccessorFn: (BarChartData entry, _) =>
+              '${entry.mes}: ${entry.paginas.toInt()}',
+        ),
+      ];
     }
-  }
-  final data = paginasLeidasPorMes.entries
-      .map((entry) => BarChartData(entry.key, entry.value.toDouble()))
-      .toList();
-  return [
-    charts.Series<BarChartData, String>(
-      id: 'Páginas Leídas',
-      data: data,
-      domainFn: (BarChartData entry, _) => entry.mes,
-      measureFn: (BarChartData entry, _) => entry.paginas,
-      labelAccessorFn: (BarChartData entry, _) => '${entry.mes}: ${entry.paginas.toInt()}',
-    ),
-  ];
-}
-
 
     // Generar datos para la gráfica de pastel
     Map<String, double> generoPromedios = {};
