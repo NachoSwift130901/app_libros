@@ -527,7 +527,7 @@ class _AgregarModalState extends State<AgregarModal> {
               onChanged: (bool value) {
                 setState(() {
                   _isLeido = value;
-                  if(value) {
+                  if (value) {
                     _rating = 1;
                   }
                 });
@@ -857,14 +857,16 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
                     infoPrestacion.prestadoA!.isNotEmpty) ...[
                   Text('Prestado a: ${infoPrestacion.prestadoA}',
                       style: const TextStyle(fontSize: 18)),
-                  Text('Fecha prestacion : ${DateFormat.yMd().format(DateTime.parse(infoPrestacion.fechaPrestacion!))}',
+                  Text(
+                      'Fecha prestacion : ${DateFormat.yMd().format(DateTime.parse(infoPrestacion.fechaPrestacion!))}',
                       style: const TextStyle(fontSize: 18)),
                 ],
                 if (infoPrestacion.prestadoDe != null &&
                     infoPrestacion.prestadoDe!.isNotEmpty) ...[
                   Text('Prestado de: ${infoPrestacion.prestadoDe}',
                       style: const TextStyle(fontSize: 18)),
-                  Text('Fecha prestacion : ${DateFormat.yMd().format(DateTime.parse(infoPrestacion.fechaPrestacion!))}',
+                  Text(
+                      'Fecha prestacion : ${DateFormat.yMd().format(DateTime.parse(infoPrestacion.fechaPrestacion!))}',
                       style: const TextStyle(fontSize: 18)),
                 ],
               ]
@@ -925,20 +927,34 @@ class _EditarLibroModalState extends State<EditarLibroModal> {
   DateTime? _fechaPrestacion;
   DateTime? _fechaRegreso;
 
+  late TextEditingController _prestadoAController;
+  late TextEditingController _prestadoDeController;
+  late TextEditingController _resenaController;
+
   @override
   void initState() {
     super.initState();
     _isLeido = widget.libro.fechaLectura != null;
     _isPrestado = widget.libro.esPrestado;
-    _isPrestadoA = widget.libro.prestadoA != null;
-    _isPrestadoDe = widget.libro.prestadoDe != null;
+
+    // Evaluar los campos de InfoPrestacion para determinar el estado inicial
+    _isPrestadoA = widget.infoPrestacion.prestadoA != null && widget.infoPrestacion.prestadoA!.isNotEmpty;
+    _isPrestadoDe = widget.infoPrestacion.prestadoDe != null && widget.infoPrestacion.prestadoDe!.isNotEmpty;
+
     _fechaSeleccionada = _parseFecha(widget.libro.fechaLectura);
-    _rating = widget.libro.rating != null && widget.libro.rating! > 0 ? widget.libro.rating! : 1;
+    _rating = widget.libro.rating != null && widget.libro.rating! > 0
+        ? widget.libro.rating!
+        : 1;
     _prestadoA = widget.infoPrestacion.prestadoA ?? '';
     _prestadoDe = widget.infoPrestacion.prestadoDe ?? '';
     _resena = widget.libro.critica;
     _fechaPrestacion = _parseFecha(widget.infoPrestacion.fechaPrestacion);
     _fechaRegreso = _parseFecha(widget.infoPrestacion.fechaRegreso);
+
+    // Inicializar controladores
+    _prestadoAController = TextEditingController(text: _prestadoA);
+    _prestadoDeController = TextEditingController(text: _prestadoDe);
+    _resenaController = TextEditingController(text: _resena);
   }
 
   DateTime? _parseFecha(String? fecha) {
@@ -1077,10 +1093,39 @@ class _EditarLibroModalState extends State<EditarLibroModal> {
                 if (_isPrestadoA) ...[
                   TextField(
                     decoration: const InputDecoration(labelText: 'Prestado a'),
-                    controller: TextEditingController(text: _prestadoA),
+                    controller: _prestadoAController,
                     onChanged: (value) {
                       setState(() {
                         _prestadoA = value;
+                      });
+                    },
+                  ),
+                  ListTile(
+                    title: const Text('Fecha de Prestación'),
+                    subtitle: Text(_fechaPrestacion == null
+                        ? 'Selecciona una fecha'
+                        : DateFormat.yMMMd().format(_fechaPrestacion!)),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () => seleccionarFecha(context, _fechaPrestacion,
+                        (picked) => _fechaPrestacion = picked),
+                  ),
+                  ListTile(
+                    title: const Text('Fecha de Regreso'),
+                    subtitle: Text(_fechaRegreso == null
+                        ? 'Selecciona una fecha'
+                        : DateFormat.yMMMd().format(_fechaRegreso!)),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () => seleccionarFecha(context, _fechaRegreso,
+                        (picked) => _fechaRegreso = picked),
+                  ),
+                ],
+                if (_isPrestadoDe) ...[
+                  TextField(
+                    decoration: const InputDecoration(labelText: 'Prestado de'),
+                    controller: _prestadoDeController,
+                    onChanged: (value) {
+                      setState(() {
+                        _prestadoDe = value;
                       });
                     },
                   ),
@@ -1109,7 +1154,7 @@ class _EditarLibroModalState extends State<EditarLibroModal> {
                   onChanged: (bool value) {
                     setState(() {
                       _isLeido = value;
-                      if(value = false) {
+                      if (value = false) {
                         _rating = 0;
                       }
                     });
@@ -1150,7 +1195,7 @@ class _EditarLibroModalState extends State<EditarLibroModal> {
                       labelText: 'Reseña',
                     ),
                     maxLines: 3,
-                    controller: TextEditingController(text: _resena),
+                    controller: _resenaController,
                     onChanged: (value) {
                       setState(() {
                         _resena = value;
