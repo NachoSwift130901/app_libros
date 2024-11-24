@@ -424,6 +424,7 @@ class _AgregarModalState extends State<AgregarModal> {
       }
       context.read<AppBloc>().add(AgregarLibro(libro: newLibro));
       Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar( const SnackBar( content: Text('Libro guardado correctamente'), ), );
     }
 
     return Container(
@@ -691,9 +692,13 @@ class _PantallaMisLibrosState extends State<PantallaMisLibros> {
                 itemBuilder: (context, index) {
                   final libro = libros[index];
                   // Filtrar prestamos por ISBN y obtener el más reciente.
-                  final infoPrestacionReciente = prestamos
+                  final prestamosFiltrados = prestamos
                       .where((prestamo) => prestamo.isbn == libro.isbn)
-                      .first;
+                      .toList();
+
+                  final infoPrestacionReciente = prestamosFiltrados.isNotEmpty
+                      ? prestamosFiltrados.first
+                      : null;
                   return ListTile(
                     leading: libro.portadaUrl.isNotEmpty
                         ? Image.network(libro.portadaUrl,
@@ -714,7 +719,8 @@ class _PantallaMisLibrosState extends State<PantallaMisLibros> {
                           MaterialPageRoute(
                               builder: ((context) => DetalleLibroMisLibrosPage(
                                     libro: libro,
-                                    infoPrestacion: infoPrestacionReciente,
+                                    infoPrestacion: infoPrestacionReciente ??
+                                        InfoPrestacion(isbn: libro.isbn),
                                   ))));
                     },
                   );
@@ -767,6 +773,7 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
         libro = result;
       });
     }
+    ScaffoldMessenger.of(context).showSnackBar( const SnackBar( content: Text('Libro actualizado correctamente'), ), );
   }
 
   void _mostrarModalEliminar(Libro libro) {
@@ -792,6 +799,7 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
                       .add(EliminarLibro(isbn: libro.isbn));
                   Navigator.of(context).pop();
                   Navigator.of(outerContext).pop();
+                  ScaffoldMessenger.of(outerContext).showSnackBar( const SnackBar( content: Text('Libro eliminado correctamente'), ), );
                 },
                 child: const Text('Eliminar'),
               )
