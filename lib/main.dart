@@ -382,8 +382,7 @@ class _AgregarModalState extends State<AgregarModal> {
 
     bool validarFormulario() {
       if (_isPrestado) {
-        if ((_isPrestadoA && _prestadoA.isEmpty) ||
-            (_isPrestadoDe && _prestadoDe.isEmpty)) {
+        if ((_isPrestadoA && _prestadoA.isEmpty) || (_isPrestadoDe && _prestadoDe.isEmpty)) {
           return false;
         }
         if (_fechaPrestacion == null) {
@@ -802,16 +801,26 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
 
   @override
   Widget build(BuildContext context) {
-    return material.BlocListener<AppBloc, AppEstado>(
-      listener: (context, state) {
-        if (state is Operacional) {
-          int index = state.listaLibros.indexWhere((l) => l.isbn == libro.isbn);
-          if (index != -1) {
-            setState(() {
-              libro = state.listaLibros[index];
-            });
-          }
+  return material.BlocListener<AppBloc, AppEstado>(
+    listener: (context, state) {
+      if (state is Operacional) {
+        // Actualiza la información del libro
+        int indexLibro = state.listaLibros.indexWhere((l) => l.isbn == libro.isbn);
+        if (indexLibro != -1) {
+          setState(() {
+            libro = state.listaLibros[indexLibro];
+          });
         }
+
+        // Actualiza la información de infoprestación
+        int indexPrestacion = state.listaPrestamos.indexWhere((p) => p.isbn == infoPrestacion.isbn);
+        if (indexPrestacion != -1) {
+          setState(() {
+            infoPrestacion = state.listaPrestamos[indexPrestacion];
+          });
+        }
+      }
+      print(infoPrestacion);
       },
       child: Scaffold(
         appBar: AppBar(
@@ -982,6 +991,11 @@ class _EditarLibroModalState extends State<EditarLibroModal> {
   }
 
   void guardarCambios() {
+
+    if(!validarFormulario()) {
+      mostrarAlertaError('Por favor completa todos los campos requeridos.');
+      return;
+    }
     Libro libroEditado = Libro(
       isbn: widget.libro.isbn,
       titulo: widget.libro.titulo,
@@ -1000,7 +1014,16 @@ class _EditarLibroModalState extends State<EditarLibroModal> {
       rating: _rating,
     );
 
-    context.read<AppBloc>().add(EditarLibro(libro: libroEditado));
+  // Crear la información de préstamo actualizada
+  InfoPrestacion infoPrestacion = InfoPrestacion(
+    isbn: widget.libro.isbn,
+    prestadoA: _isPrestadoA ? _prestadoA : null,
+    prestadoDe: _isPrestadoDe ? _prestadoDe : null,
+    fechaPrestacion: _fechaPrestacion?.toIso8601String(),
+    fechaRegreso: _fechaRegreso?.toIso8601String(),
+  );
+
+    context.read<AppBloc>().add(EditarLibro(libro: libroEditado, infoPrestacion: infoPrestacion));
 
     Navigator.pop(context, libroEditado);
 

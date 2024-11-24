@@ -99,8 +99,9 @@ class EliminarLibro extends AppEvento {
 
 class EditarLibro extends AppEvento {
   final Libro libro;
+  final InfoPrestacion infoPrestacion;
 
-  EditarLibro({required this.libro});
+  EditarLibro({required this.libro, required this.infoPrestacion});
 }
 
 // ----------- BLOC ----------------//
@@ -145,9 +146,6 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
           libro.esPrestado ? 1 : 0
         ]);
 
-    print('Prestado de: ${libro.prestadoDe}');
-    print('Prestado a : ${libro.prestadoA}');
-
     if (libro.esPrestado) {
       await db.rawInsert(
           ''' INSERT INTO prestamos ( isbn, prestadoA, prestadoDe, fechaPrestacion, fechaRegreso ) VALUES (?, ?, ?, ?, ?) ''',
@@ -164,7 +162,17 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
 
   }
 
-  Future<void> editarLibro(Libro libro) async {
+  Future<void> editarLibro(Libro libro, InfoPrestacion infoPrestacion) async {
+
+
+    // Si se registra una fecha de regreso, marcar esPrestado como falso
+    if (infoPrestacion.fechaRegreso != null &&
+        infoPrestacion.fechaRegreso!.isNotEmpty) {
+      libro.esPrestado = false;
+    }
+
+    print(infoPrestacion);
+
     await db.rawUpdate(
         ''' UPDATE libros SET titulo = ?, genero = ?, autor = ?, portadaURL = ?, fechaPublicacion = ?, totalPaginas = ?, fechaLectura = ?, rating = ?, critica = ?, esPrestado = ? WHERE isbn = ? ''',
         [
@@ -180,7 +188,57 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
           libro.esPrestado ? 1 : 0,
           libro.isbn
         ]);
+
+  // Manejar la tabla de prestamos
+  if (libro.esPrestado) {
+    // Verificar si ya existe un registro en prestamos
+    final List<Map<String, dynamic>> existingPrestamo = await db.rawQuery(
+      'SELECT * FROM prestamos WHERE isbn = ?',
+      [libro.isbn],
+    );
+
+  if (existingPrestamo.isNotEmpty) {
+      // Actualizar registro existente
+      await db.rawUpdate(
+        ''' UPDATE prestamos 
+            SET prestadoA = ?, prestadoDe = ?, fechaPrestacion = ?, fechaRegreso = ? 
+            WHERE isbn = ? ''',
+        [
+          infoPrestacion.prestadoA,
+          infoPrestacion.prestadoDe,
+          infoPrestacion.fechaPrestacion,
+          infoPrestacion.fechaRegreso,
+          libro.isbn
+        ],
+      );
+    } else  {
+      // Insertar nuevo registro en prestamos si no existía
+      await db.rawInsert(
+        ''' INSERT INTO prestamos (isbn, prestadoA, prestadoDe, fechaPrestacion, fechaRegreso) 
+            VALUES (?, ?, ?, ?, ?) ''',
+        [
+          libro.isbn,
+          infoPrestacion.prestadoA,
+          infoPrestacion.prestadoDe,
+          infoPrestacion.fechaPrestacion,
+          infoPrestacion.fechaRegreso
+        ],
+      );
+    }
+  } else if (infoPrestacion.fechaRegreso != null &&
+             infoPrestacion.fechaRegreso!.isNotEmpty) {
+    // Si se registra una fecha de regreso, actualizar el registro existente en prestamos
+    await db.rawUpdate(
+      ''' UPDATE prestamos 
+          SET fechaRegreso = ? 
+          WHERE isbn = ? ''',
+      [
+        infoPrestacion.fechaRegreso,
+        libro.isbn
+      ],
+    );
   }
+}
 
   Future<void> eliminarLibro(String isbn) async {
     await db.rawDelete('''DELETE FROM libros WHERE isbn = ?''', [isbn]);
@@ -191,6 +249,7 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
   AppBloc() : super(Inicial()) {
     on<Inicializado>((event, emit) async {
       await todosLosLibros();
+      await todasLasConsultas();
 
       emit(Operacional(listaLibros: _listaLibros, listaPrestamos: _listaPrestamos));
     });
@@ -198,18 +257,21 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
     on<AgregarLibro>(((event, emit) async {
       await agregarLibro(event.libro);
       await todosLosLibros();
+      await todasLasConsultas();
       emit((Operacional(listaLibros: _listaLibros, listaPrestamos: _listaPrestamos)));
     }));
 
     on<EliminarLibro>(((event, emit) async {
       await eliminarLibro(event.isbn);
       await todosLosLibros();
+      await todasLasConsultas();
       emit((Operacional(listaLibros: _listaLibros, listaPrestamos: _listaPrestamos)));
     }));
 
     on<EditarLibro>(((event, emit) async {
-      await editarLibro(event.libro);
+      await editarLibro(event.libro, event.infoPrestacion);
       await todosLosLibros();
+      await todasLasConsultas();
       emit((Operacional(listaLibros: _listaLibros, listaPrestamos: _listaPrestamos)));
     }));
   }
