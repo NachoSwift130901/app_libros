@@ -84,15 +84,15 @@ class _BarraNavegacionState extends State<BarraNavegacion> {
         },
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.abc),
+            icon: Icon(Icons.search),
             label: 'Buscar',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.abc),
+            icon: Icon(Icons.book),
             label: 'Mis Libros',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.abc),
+            icon: Icon(Icons.chat_rounded),
             label: 'Reportes',
           ),
         ],
