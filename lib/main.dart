@@ -382,7 +382,8 @@ class _AgregarModalState extends State<AgregarModal> {
 
     bool validarFormulario() {
       if (_isPrestado) {
-        if ((_isPrestadoA && _prestadoA.isEmpty) || (_isPrestadoDe && _prestadoDe.isEmpty)) {
+        if ((_isPrestadoA && _prestadoA.isEmpty) ||
+            (_isPrestadoDe && _prestadoDe.isEmpty)) {
           return false;
         }
         if (_fechaPrestacion == null) {
@@ -801,26 +802,28 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
 
   @override
   Widget build(BuildContext context) {
-  return material.BlocListener<AppBloc, AppEstado>(
-    listener: (context, state) {
-      if (state is Operacional) {
-        // Actualiza la información del libro
-        int indexLibro = state.listaLibros.indexWhere((l) => l.isbn == libro.isbn);
-        if (indexLibro != -1) {
-          setState(() {
-            libro = state.listaLibros[indexLibro];
-          });
-        }
+    return material.BlocListener<AppBloc, AppEstado>(
+      listener: (context, state) {
+        if (state is Operacional) {
+          // Actualiza la información del libro
+          int indexLibro =
+              state.listaLibros.indexWhere((l) => l.isbn == libro.isbn);
+          if (indexLibro != -1) {
+            setState(() {
+              libro = state.listaLibros[indexLibro];
+            });
+          }
 
-        // Actualiza la información de infoprestación
-        int indexPrestacion = state.listaPrestamos.indexWhere((p) => p.isbn == infoPrestacion.isbn);
-        if (indexPrestacion != -1) {
-          setState(() {
-            infoPrestacion = state.listaPrestamos[indexPrestacion];
-          });
+          // Actualiza la información de infoprestación
+          int indexPrestacion = state.listaPrestamos
+              .indexWhere((p) => p.isbn == infoPrestacion.isbn);
+          if (indexPrestacion != -1) {
+            setState(() {
+              infoPrestacion = state.listaPrestamos[indexPrestacion];
+            });
+          }
         }
-      }
-      print(infoPrestacion);
+        print(infoPrestacion);
       },
       child: Scaffold(
         appBar: AppBar(
@@ -947,8 +950,10 @@ class _EditarLibroModalState extends State<EditarLibroModal> {
     _isPrestado = widget.libro.esPrestado;
 
     // Evaluar los campos de InfoPrestacion para determinar el estado inicial
-    _isPrestadoA = widget.infoPrestacion.prestadoA != null && widget.infoPrestacion.prestadoA!.isNotEmpty;
-    _isPrestadoDe = widget.infoPrestacion.prestadoDe != null && widget.infoPrestacion.prestadoDe!.isNotEmpty;
+    _isPrestadoA = widget.infoPrestacion.prestadoA != null &&
+        widget.infoPrestacion.prestadoA!.isNotEmpty;
+    _isPrestadoDe = widget.infoPrestacion.prestadoDe != null &&
+        widget.infoPrestacion.prestadoDe!.isNotEmpty;
 
     _fechaSeleccionada = _parseFecha(widget.libro.fechaLectura);
     _rating = widget.libro.rating != null && widget.libro.rating! > 0
@@ -991,8 +996,7 @@ class _EditarLibroModalState extends State<EditarLibroModal> {
   }
 
   void guardarCambios() {
-
-    if(!validarFormulario()) {
+    if (!validarFormulario()) {
       mostrarAlertaError('Por favor completa todos los campos requeridos.');
       return;
     }
@@ -1014,16 +1018,18 @@ class _EditarLibroModalState extends State<EditarLibroModal> {
       rating: _rating,
     );
 
-  // Crear la información de préstamo actualizada
-  InfoPrestacion infoPrestacion = InfoPrestacion(
-    isbn: widget.libro.isbn,
-    prestadoA: _isPrestadoA ? _prestadoA : null,
-    prestadoDe: _isPrestadoDe ? _prestadoDe : null,
-    fechaPrestacion: _fechaPrestacion?.toIso8601String(),
-    fechaRegreso: _fechaRegreso?.toIso8601String(),
-  );
+    // Crear la información de préstamo actualizada
+    InfoPrestacion infoPrestacion = InfoPrestacion(
+      isbn: widget.libro.isbn,
+      prestadoA: _isPrestadoA ? _prestadoA : null,
+      prestadoDe: _isPrestadoDe ? _prestadoDe : null,
+      fechaPrestacion: _fechaPrestacion?.toIso8601String(),
+      fechaRegreso: _fechaRegreso?.toIso8601String(),
+    );
 
-    context.read<AppBloc>().add(EditarLibro(libro: libroEditado, infoPrestacion: infoPrestacion));
+    context
+        .read<AppBloc>()
+        .add(EditarLibro(libro: libroEditado, infoPrestacion: infoPrestacion));
 
     Navigator.pop(context, libroEditado);
 
@@ -1387,6 +1393,19 @@ class _PantallaReportesState extends State<PantallaReportes> {
                             color: charts.MaterialPalette.black,
                           )),
                     ),
+                    defaultRenderer: charts.BarRendererConfig(
+                      barRendererDecorator: charts.BarLabelDecorator<
+                          String>(), // Agrega etiquetas
+                      cornerStrategy: const charts.ConstCornerStrategy(
+                          4), // Bordes redondeados opcionales
+                    ),
+                    customSeriesRenderers: [
+                      charts.BarRendererConfig(
+                        customRendererId: 'customBar',
+                        barRendererDecorator: charts.BarLabelDecorator<
+                            String>(), // Decorador para esta serie
+                      ),
+                    ],
                   )
                 : charts.PieChart<String>(
                     series,
@@ -1539,8 +1558,8 @@ class _PantallaReportesState extends State<PantallaReportes> {
           domainFn: (BarChartData entry, _) => entry.mes,
           measureFn: (BarChartData entry, _) => entry.paginas,
           labelAccessorFn: (BarChartData entry, _) =>
-              '${entry.mes}: ${entry.paginas.toInt()}',
-        ),
+              '${entry.paginas.toInt()}', // Valor mostrado como etiqueta
+        )..setAttribute(charts.rendererIdKey, 'customBar'),
       ];
     }
 
