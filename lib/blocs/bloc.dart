@@ -151,6 +151,11 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
             libro.fechaRegreso
           ]);
     }
+    print('AQUI');
+    print(libro.prestadoA);
+    print(libro.fechaPrestacion);
+    print(libro.prestadoDe);
+    print(libro.fechaRegreso);
 
     await todosLosLibros();
   }
@@ -182,7 +187,6 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
   AppBloc() : super(Inicial()) {
     on<Inicializado>((event, emit) async {
       await todosLosLibros();
-      print('YA FUNCIONA TODO');
 
       emit(Operacional(listaLibros: _listaLibros));
     });
