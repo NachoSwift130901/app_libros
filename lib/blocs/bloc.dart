@@ -48,6 +48,13 @@ class RepositorioBD {
                     ''');
             }));
   }
+
+  Future<bool> existeISBN(String isbn) async { 
+    final List<Map<String, dynamic>> maps = await db.query(
+       'libros', where: 'isbn = ?', whereArgs: [isbn], 
+      ); 
+    return maps.isNotEmpty; 
+  }
 }
 
 // ----------- Estados --------------//
@@ -170,6 +177,7 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
     await db.rawDelete('''DELETE FROM libros WHERE isbn = ?''', [isbn]);
   }
 
+  Future<bool> existeISBN(String isbn) async { return await repo.existeISBN(isbn); }
   // onEVENTOS //
   AppBloc() : super(Inicial()) {
     on<Inicializado>((event, emit) async {

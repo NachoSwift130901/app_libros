@@ -1,4 +1,4 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
+// ignore_for_file: public_member_api_docs, sort_constructors_first, use_build_context_synchronously
 import 'dart:convert';
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
@@ -252,7 +252,29 @@ class DetalleLibroPage extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
+        onPressed: () async {
+          final bloc = context.read<AppBloc>();
+          final bool existe = await bloc.existeISBN(isbn);
+          if (existe) {
+            showDialog(
+              context: context,
+              builder: (context) {
+                return AlertDialog(
+                  title: const Text('Información'),
+                  content: const Text('Este libro ya está en la biblioteca.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text('OK'),
+                    ),
+                  ],
+                );
+              },
+            );
+          }
+          else {
           showModalBottomSheet(
               context: context,
               builder: (BuildContext context) {
@@ -269,12 +291,7 @@ class DetalleLibroPage extends StatelessWidget {
                   ),
                 );
               });
-
-          //   context.read<AppBloc>().add(AgregarLibro(
-          //       libro: newLibro
-          //       )
-
-          //   );
+          }
           // Navigator.pop(context);
         },
         child: const Icon(Icons.add),
@@ -563,12 +580,12 @@ class _AgregarModalState extends State<AgregarModal> {
                     fechaPublicacion: widget.fechaPublicacion.toIso8601String(),
                     rating: _rating,
                     critica: _resena,
-                    esPrestado: _isPrestado,
-                    prestadoA: '',
-                    prestadoDe: '',
-                    fechaPrestacion: '',
-                    fechaRegreso: '',
-                    fechaLectura: _fechaSeleccionada.toString(),
+                    esPrestado: _isPrestadoA || _isPrestadoDe,
+                    prestadoA: _isPrestadoA ? _prestadoA : null,
+                    prestadoDe: _isPrestadoDe ? _prestadoDe : null,
+                    fechaPrestacion: _fechaPrestacion?.toIso8601String(),
+                    fechaRegreso: _fechaRegreso?.toIso8601String(),
+                    fechaLectura: _fechaSeleccionada?.toIso8601String(),
                     totalPaginas: widget.totalPaginas);
                 guardarLibro(newLibro);
               },
