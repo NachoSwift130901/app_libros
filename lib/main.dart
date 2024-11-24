@@ -527,6 +527,9 @@ class _AgregarModalState extends State<AgregarModal> {
               onChanged: (bool value) {
                 setState(() {
                   _isLeido = value;
+                  if(value) {
+                    _rating = 1;
+                  }
                 });
               },
             ),
@@ -930,7 +933,7 @@ class _EditarLibroModalState extends State<EditarLibroModal> {
     _isPrestadoA = widget.libro.prestadoA != null;
     _isPrestadoDe = widget.libro.prestadoDe != null;
     _fechaSeleccionada = _parseFecha(widget.libro.fechaLectura);
-    _rating = widget.libro.rating ?? 1;
+    _rating = widget.libro.rating != null && widget.libro.rating! > 0 ? widget.libro.rating! : 1;
     _prestadoA = widget.infoPrestacion.prestadoA ?? '';
     _prestadoDe = widget.infoPrestacion.prestadoDe ?? '';
     _resena = widget.libro.critica;
@@ -1106,6 +1109,9 @@ class _EditarLibroModalState extends State<EditarLibroModal> {
                   onChanged: (bool value) {
                     setState(() {
                       _isLeido = value;
+                      if(value = false) {
+                        _rating = 0;
+                      }
                     });
                   },
                 ),
