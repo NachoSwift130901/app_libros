@@ -1,4 +1,3 @@
-import 'package:app_libros/modelos/libro.dart';
 import 'package:equatable/equatable.dart';
 
 class InfoPrestacion with EquatableMixin { 
@@ -10,13 +9,14 @@ class InfoPrestacion with EquatableMixin {
   
   InfoPrestacion({ required this.isbn, this.prestadoA, this.prestadoDe, this.fechaPrestacion, this.fechaRegreso, }); 
   
-  factory InfoPrestacion.fromLibro(Libro libro) { 
+  factory InfoPrestacion.fromMap(Map<String, dynamic> map) { 
     return InfoPrestacion(
-       isbn: libro.isbn, 
-       prestadoA: libro.prestadoA, 
-       prestadoDe: libro.prestadoDe, 
-       fechaPrestacion: libro.fechaPrestacion, 
-       fechaRegreso: libro.fechaRegreso, );
+       isbn: map['isbn'], 
+       prestadoA: map['prestadoA']??'', 
+       prestadoDe: map['prestadoDe']??'', 
+       fechaPrestacion: map['fechaPrestacion']??'', 
+       fechaRegreso: map['fechaRegreso']??'',
+       );
  } 
  
  @override List<Object?> get props => [isbn, prestadoA, prestadoDe, fechaPrestacion, fechaRegreso]; }

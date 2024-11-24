@@ -1,5 +1,6 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first, use_build_context_synchronously
 import 'dart:convert';
+import 'package:app_libros/modelos/info_prestacion.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart' as material;
@@ -42,7 +43,7 @@ class BarraNavegacion extends StatefulWidget {
 }
 
 class _BarraNavegacionState extends State<BarraNavegacion> {
-  int _currentIndex = 1;
+  int _currentIndex = 0;
 
   String obtenerTitulo() {
     switch (_currentIndex) {
@@ -273,24 +274,23 @@ class DetalleLibroPage extends StatelessWidget {
                 );
               },
             );
-          }
-          else {
-          showModalBottomSheet(
-              context: context,
-              builder: (BuildContext context) {
-                return Container(
-                  padding: const EdgeInsets.all(16.0),
-                  child: AgregarModal(
-                    isbn: isbn,
-                    titulo: titulo,
-                    autor: autor,
-                    genero: genero,
-                    portadaUrl: portadaUrl,
-                    fechaPublicacion: fechaPublicacion,
-                    totalPaginas: totalPaginas,
-                  ),
-                );
-              });
+          } else {
+            showModalBottomSheet(
+                context: context,
+                builder: (BuildContext context) {
+                  return Container(
+                    padding: const EdgeInsets.all(16.0),
+                    child: AgregarModal(
+                      isbn: isbn,
+                      titulo: titulo,
+                      autor: autor,
+                      genero: genero,
+                      portadaUrl: portadaUrl,
+                      fechaPublicacion: fechaPublicacion,
+                      totalPaginas: totalPaginas,
+                    ),
+                  );
+                });
           }
           // Navigator.pop(context);
         },
@@ -326,10 +326,10 @@ class AgregarModal extends StatefulWidget {
 class _AgregarModalState extends State<AgregarModal> {
   bool _isLeido = false;
   bool _isPrestado = false;
-  bool _isPrestadoA = true;
+  bool _isPrestadoA = false;
   bool _isPrestadoDe = false;
   DateTime? _fechaSeleccionada;
-  int _rating = 1;
+  int _rating = 0;
   String _prestadoA = '';
   String _prestadoDe = '';
   String _resena = '';
@@ -439,6 +439,7 @@ class _AgregarModalState extends State<AgregarModal> {
               onChanged: (bool value) {
                 setState(() {
                   _isPrestado = value;
+                  _isPrestadoA = true;
                 });
               },
             ),
@@ -613,10 +614,13 @@ class _PantallaMisLibrosState extends State<PantallaMisLibros> {
   @override
   Widget build(BuildContext context) {
     List<Libro> libros = [];
+    List<InfoPrestacion> prestamos = [];
+
     var estado = context.watch<AppBloc>().state;
 
     if (estado is Operacional) {
       libros = (estado).listaLibros;
+      prestamos = (estado).listaPrestamos;
     }
 
     if (estado is Inicial) {
@@ -647,6 +651,10 @@ class _PantallaMisLibrosState extends State<PantallaMisLibros> {
               return a.titulo.compareTo(b.titulo);
           }
         });
+
+        // Ordenar la lista de prestamos por fecha de préstamo en orden descendente.
+        prestamos.sort((a, b) => DateTime.parse(b.fechaPrestacion!)
+            .compareTo(DateTime.parse(a.fechaPrestacion!)));
 
         return Column(
           children: [
@@ -679,6 +687,10 @@ class _PantallaMisLibrosState extends State<PantallaMisLibros> {
                 itemCount: libros.length,
                 itemBuilder: (context, index) {
                   final libro = libros[index];
+                  // Filtrar prestamos por ISBN y obtener el más reciente.
+                  final infoPrestacionReciente = prestamos
+                      .where((prestamo) => prestamo.isbn == libro.isbn)
+                      .first;
                   return ListTile(
                     leading: libro.portadaUrl.isNotEmpty
                         ? Image.network(libro.portadaUrl,
@@ -697,8 +709,10 @@ class _PantallaMisLibrosState extends State<PantallaMisLibros> {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: ((context) =>
-                                  DetalleLibroMisLibrosPage(libro: libro))));
+                              builder: ((context) => DetalleLibroMisLibrosPage(
+                                    libro: libro,
+                                    infoPrestacion: infoPrestacionReciente,
+                                  ))));
                     },
                   );
                 },
@@ -713,10 +727,12 @@ class _PantallaMisLibrosState extends State<PantallaMisLibros> {
 
 class DetalleLibroMisLibrosPage extends StatefulWidget {
   final Libro libro;
+  final InfoPrestacion infoPrestacion;
 
   const DetalleLibroMisLibrosPage({
     Key? key,
     required this.libro,
+    required this.infoPrestacion,
   }) : super(key: key);
 
   @override
@@ -726,17 +742,22 @@ class DetalleLibroMisLibrosPage extends StatefulWidget {
 
 class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
   late Libro libro;
+  late InfoPrestacion infoPrestacion;
 
   @override
   void initState() {
     super.initState();
     libro = widget.libro;
+    infoPrestacion = widget.infoPrestacion;
   }
 
   Future<void> _editarLibro(Libro libro) async {
     final result = await showModalBottomSheet<Libro>(
       context: context,
-      builder: (context) => EditarLibroModal(libro: libro),
+      builder: (context) => EditarLibroModal(
+        libro: libro,
+        infoPrestacion: infoPrestacion,
+      ),
     );
     if (result != null) {
       setState(() {
@@ -820,16 +841,30 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
                 Text('Fecha de Lectura: ${libro.fechaLectura}',
                     style: const TextStyle(fontSize: 18)),
               const SizedBox(height: 8),
-              Text('Calificación: ${libro.rating}/10',
-                  style: const TextStyle(fontSize: 18)),
+              if (libro.rating != 0)
+                Text('Calificación: ${libro.rating}/10',
+                    style: const TextStyle(fontSize: 18)),
               const SizedBox(height: 8),
               if (libro.critica.isNotEmpty)
                 Text('Crítica: ${libro.critica}',
                     style: const TextStyle(fontSize: 18)),
               const SizedBox(height: 8),
-              if (libro.esPrestado)
-                Text('Prestado a: ${libro.prestadoA}',
-                    style: const TextStyle(fontSize: 18)),
+              if (libro.esPrestado) ...[
+                if (infoPrestacion.prestadoA != null &&
+                    infoPrestacion.prestadoA!.isNotEmpty) ...[
+                  Text('Prestado a: ${infoPrestacion.prestadoA}',
+                      style: const TextStyle(fontSize: 18)),
+                  Text('Fecha prestacion : ${DateFormat.yMd().format(DateTime.parse(infoPrestacion.fechaPrestacion!))}',
+                      style: const TextStyle(fontSize: 18)),
+                ],
+                if (infoPrestacion.prestadoDe != null &&
+                    infoPrestacion.prestadoDe!.isNotEmpty) ...[
+                  Text('Prestado de: ${infoPrestacion.prestadoDe}',
+                      style: const TextStyle(fontSize: 18)),
+                  Text('Fecha prestacion : ${DateFormat.yMd().format(DateTime.parse(infoPrestacion.fechaPrestacion!))}',
+                      style: const TextStyle(fontSize: 18)),
+                ],
+              ]
             ],
           ),
         ),
@@ -862,10 +897,12 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
 
 class EditarLibroModal extends StatefulWidget {
   final Libro libro;
+  final InfoPrestacion infoPrestacion;
 
   const EditarLibroModal({
     Key? key,
     required this.libro,
+    required this.infoPrestacion,
   }) : super(key: key);
 
   @override
@@ -875,20 +912,30 @@ class EditarLibroModal extends StatefulWidget {
 class _EditarLibroModalState extends State<EditarLibroModal> {
   late bool _isLeido;
   late bool _isPrestado;
+  late bool _isPrestadoA;
+  late bool _isPrestadoDe;
   DateTime? _fechaSeleccionada;
   late int _rating;
   late String _prestadoA;
+  late String _prestadoDe;
   late String _resena;
+  DateTime? _fechaPrestacion;
+  DateTime? _fechaRegreso;
 
   @override
   void initState() {
     super.initState();
     _isLeido = widget.libro.fechaLectura != null;
     _isPrestado = widget.libro.esPrestado;
+    _isPrestadoA = widget.libro.prestadoA != null;
+    _isPrestadoDe = widget.libro.prestadoDe != null;
     _fechaSeleccionada = _parseFecha(widget.libro.fechaLectura);
     _rating = widget.libro.rating ?? 1;
-    _prestadoA = widget.libro.prestadoA ?? '';
+    _prestadoA = widget.infoPrestacion.prestadoA ?? '';
+    _prestadoDe = widget.infoPrestacion.prestadoDe ?? '';
     _resena = widget.libro.critica;
+    _fechaPrestacion = _parseFecha(widget.infoPrestacion.fechaPrestacion);
+    _fechaRegreso = _parseFecha(widget.infoPrestacion.fechaRegreso);
   }
 
   DateTime? _parseFecha(String? fecha) {
@@ -900,16 +947,17 @@ class _EditarLibroModalState extends State<EditarLibroModal> {
     }
   }
 
-  Future<void> seleccionarFecha(BuildContext context) async {
+  Future<void> seleccionarFecha(BuildContext context, DateTime? selectedDate,
+      Function(DateTime) onSelect) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _fechaSeleccionada ?? DateTime.now(),
+      initialDate: selectedDate ?? DateTime.now(),
       firstDate: DateTime(1950),
       lastDate: DateTime(2101),
     );
-    if (picked != null && picked != _fechaSeleccionada) {
+    if (picked != null && picked != selectedDate) {
       setState(() {
-        _fechaSeleccionada = picked;
+        onSelect(picked);
       });
     }
   }
@@ -940,92 +988,177 @@ class _EditarLibroModalState extends State<EditarLibroModal> {
     setState(() {});
   }
 
+  bool validarFormulario() {
+    if (_isPrestado) {
+      if ((_isPrestadoA && _prestadoA.isEmpty) ||
+          (_isPrestadoDe && _prestadoDe.isEmpty)) {
+        return false;
+      }
+      if (_fechaPrestacion == null) {
+        return false;
+      }
+    }
+    if (_isLeido && _fechaSeleccionada == null) {
+      return false;
+    }
+    return true;
+  }
+
+  void mostrarAlertaError(String mensaje) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Error'),
+          content: Text(mensaje),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16.0),
       child: SingleChildScrollView(
         child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SwitchListTile(
-              title: const Text('Es prestado?'),
-              value: _isPrestado,
-              onChanged: (bool value) {
-                setState(() {
-                  _isPrestado = value;
-                });
-              },
-            ),
-            if (_isPrestado)
-              TextField(
-                decoration: const InputDecoration(labelText: 'Prestado a'),
-                controller: TextEditingController(text: _prestadoA),
-                onChanged: (value) {
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SwitchListTile(
+                title: const Text('Es prestado?'),
+                value: _isPrestado,
+                onChanged: (bool value) {
                   setState(() {
-                    _prestadoA = value;
+                    _isPrestado = value;
+                    if (!value) {
+                      _isPrestadoA = false;
+                      _isPrestadoDe = false;
+                    }
                   });
                 },
               ),
-            SwitchListTile(
-              title: const Text('Marcar como leído'),
-              value: _isLeido,
-              onChanged: (bool value) {
-                setState(() {
-                  _isLeido = value;
-                });
-              },
-            ),
-            if (_isLeido) ...[
-              ListTile(
-                title: const Text('Fecha de lectura'),
-                subtitle: Text(
-                  _fechaSeleccionada == null
-                      ? 'Selecciona una fecha'
-                      : DateFormat.yMMMd().format(_fechaSeleccionada!),
-                ),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () => seleccionarFecha(context),
-              ),
-              ListTile(
-                title: const Text('Calificar libro'),
-                subtitle: Text('$_rating/10'),
-                trailing: DropdownButton<int>(
-                  value: _rating,
-                  items: List.generate(10, (index) => index + 1)
-                      .map((value) => DropdownMenuItem<int>(
-                            value: value,
-                            child: Text('$value'),
-                          ))
-                      .toList(),
-                  onChanged: (value) {
+              if (_isPrestado) ...[
+                SwitchListTile(
+                  title: const Text('Prestado A'),
+                  value: _isPrestadoA,
+                  onChanged: (bool value) {
                     setState(() {
-                      _rating = value!;
+                      _isPrestadoA = value;
+                      if (value) {
+                        _isPrestadoDe = false;
+                      }
                     });
                   },
                 ),
-              ),
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Reseña',
+                SwitchListTile(
+                  title: const Text('Prestado De'),
+                  value: _isPrestadoDe,
+                  onChanged: (bool value) {
+                    setState(() {
+                      _isPrestadoDe = value;
+                      if (value) {
+                        _isPrestadoA = false;
+                      }
+                    });
+                  },
                 ),
-                maxLines: 3,
-                controller: TextEditingController(text: _resena),
-                onChanged: (value) {
-                  setState(() {
-                    _resena = value;
-                  });
-                },
-              ),
-            ],
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: guardarCambios,
-              child: const Text('Guardar cambios'),
-            ),
-          ],
-        ),
+                if (_isPrestadoA) ...[
+                  TextField(
+                    decoration: const InputDecoration(labelText: 'Prestado a'),
+                    controller: TextEditingController(text: _prestadoA),
+                    onChanged: (value) {
+                      setState(() {
+                        _prestadoA = value;
+                      });
+                    },
+                  ),
+                  ListTile(
+                    title: const Text('Fecha de Prestación'),
+                    subtitle: Text(_fechaPrestacion == null
+                        ? 'Selecciona una fecha'
+                        : DateFormat.yMMMd().format(_fechaPrestacion!)),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () => seleccionarFecha(context, _fechaPrestacion,
+                        (picked) => _fechaPrestacion = picked),
+                  ),
+                  ListTile(
+                    title: const Text('Fecha de Regreso'),
+                    subtitle: Text(_fechaRegreso == null
+                        ? 'Selecciona una fecha'
+                        : DateFormat.yMMMd().format(_fechaRegreso!)),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () => seleccionarFecha(context, _fechaRegreso,
+                        (picked) => _fechaRegreso = picked),
+                  ),
+                ],
+                SwitchListTile(
+                  title: const Text('Marcar como leído'),
+                  value: _isLeido,
+                  onChanged: (bool value) {
+                    setState(() {
+                      _isLeido = value;
+                    });
+                  },
+                ),
+                if (_isLeido) ...[
+                  ListTile(
+                    title: const Text('Fecha de lectura'),
+                    subtitle: Text(
+                      _fechaSeleccionada == null
+                          ? 'Selecciona una fecha'
+                          : DateFormat.yMMMd().format(_fechaSeleccionada!),
+                    ),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () => seleccionarFecha(context, _fechaSeleccionada,
+                        (picked) => _fechaSeleccionada = picked),
+                  ),
+                  ListTile(
+                    title: const Text('Calificar libro'),
+                    subtitle: Text('$_rating/10'),
+                    trailing: DropdownButton<int>(
+                      value: _rating,
+                      items: List.generate(10, (index) => index + 1)
+                          .map((value) => DropdownMenuItem<int>(
+                                value: value,
+                                child: Text('$value'),
+                              ))
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _rating = value!;
+                        });
+                      },
+                    ),
+                  ),
+                  TextField(
+                    decoration: const InputDecoration(
+                      labelText: 'Reseña',
+                    ),
+                    maxLines: 3,
+                    controller: TextEditingController(text: _resena),
+                    onChanged: (value) {
+                      setState(() {
+                        _resena = value;
+                      });
+                    },
+                  ),
+                ],
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: guardarCambios,
+                  child: const Text('Guardar cambios'),
+                ),
+              ],
+            ]),
       ),
     );
   }

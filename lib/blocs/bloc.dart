@@ -1,3 +1,4 @@
+import 'package:app_libros/modelos/info_prestacion.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:app_libros/modelos/libro.dart';
@@ -68,8 +69,9 @@ class Inicial extends AppEstado {
 
 class Operacional extends AppEstado {
   final List<Libro> listaLibros;
+  final List<InfoPrestacion> listaPrestamos;
 
-  Operacional({required this.listaLibros});
+  Operacional({required this.listaLibros, required this.listaPrestamos});
 
   @override
   List<Object?> get props => [listaLibros];
@@ -105,6 +107,7 @@ class EditarLibro extends AppEvento {
 
 class AppBloc extends Bloc<AppEvento, AppEstado> {
   List<Libro> _listaLibros = [];
+  List<InfoPrestacion> _listaPrestamos = [];
 
   RepositorioBD repo = RepositorioBD();
 
@@ -114,13 +117,15 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
       var resultadoConsulta = await db.rawQuery('SELECT * FROM libros');
       _listaLibros = resultadoConsulta.map((e) => Libro.fromMap(e)).toList();
       print(_listaLibros);
+      todasLasConsultas();
     
   }
 
   Future<void> todasLasConsultas() async {
     await repo.inicializar();
-    var resultadoConsulta = await db.rawQuery('SELECT * FROM lecturas');
-    _listaLibros = resultadoConsulta.map((e) => Libro.fromMap(e)).toList();
+    var resultadoConsulta = await db.rawQuery('SELECT * FROM prestamos');
+    _listaPrestamos = resultadoConsulta.map((e) => InfoPrestacion.fromMap(e)).toList();
+    print(_listaPrestamos);
   }
 
   Future<void> agregarLibro(Libro libro) async {
@@ -140,6 +145,9 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
           libro.esPrestado ? 1 : 0
         ]);
 
+    print('Prestado de: ${libro.prestadoDe}');
+    print('Prestado a : ${libro.prestadoA}');
+
     if (libro.esPrestado) {
       await db.rawInsert(
           ''' INSERT INTO prestamos ( isbn, prestadoA, prestadoDe, fechaPrestacion, fechaRegreso ) VALUES (?, ?, ?, ?, ?) ''',
@@ -151,13 +159,9 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
             libro.fechaRegreso
           ]);
     }
-    print('AQUI');
-    print(libro.prestadoA);
-    print(libro.fechaPrestacion);
-    print(libro.prestadoDe);
-    print(libro.fechaRegreso);
-
     await todosLosLibros();
+    await todasLasConsultas();
+
   }
 
   Future<void> editarLibro(Libro libro) async {
@@ -188,25 +192,25 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
     on<Inicializado>((event, emit) async {
       await todosLosLibros();
 
-      emit(Operacional(listaLibros: _listaLibros));
+      emit(Operacional(listaLibros: _listaLibros, listaPrestamos: _listaPrestamos));
     });
 
     on<AgregarLibro>(((event, emit) async {
       await agregarLibro(event.libro);
       await todosLosLibros();
-      emit((Operacional(listaLibros: _listaLibros)));
+      emit((Operacional(listaLibros: _listaLibros, listaPrestamos: _listaPrestamos)));
     }));
 
     on<EliminarLibro>(((event, emit) async {
       await eliminarLibro(event.isbn);
       await todosLosLibros();
-      emit((Operacional(listaLibros: _listaLibros)));
+      emit((Operacional(listaLibros: _listaLibros, listaPrestamos: _listaPrestamos)));
     }));
 
     on<EditarLibro>(((event, emit) async {
       await editarLibro(event.libro);
       await todosLosLibros();
-      emit((Operacional(listaLibros: _listaLibros)));
+      emit((Operacional(listaLibros: _listaLibros, listaPrestamos: _listaPrestamos)));
     }));
   }
 }
