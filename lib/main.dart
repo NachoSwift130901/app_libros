@@ -424,7 +424,11 @@ class _AgregarModalState extends State<AgregarModal> {
       }
       context.read<AppBloc>().add(AgregarLibro(libro: newLibro));
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar( const SnackBar( content: Text('Libro guardado correctamente'), ), );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Libro guardado correctamente'),
+        ),
+      );
     }
 
     return Container(
@@ -434,16 +438,21 @@ class _AgregarModalState extends State<AgregarModal> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Switch para "Es prestado"
             SwitchListTile(
               title: const Text('Es prestado?'),
               value: _isPrestado,
               onChanged: (bool value) {
                 setState(() {
                   _isPrestado = value;
-                  _isPrestadoA = true;
+                  if (!value) {
+                    _isPrestadoA = false;
+                    _isPrestadoDe = false;
+                  }
                 });
               },
             ),
+            // Opciones relacionadas con "Es prestado"
             if (_isPrestado) ...[
               SwitchListTile(
                 title: const Text('Prestado A'),
@@ -451,9 +460,7 @@ class _AgregarModalState extends State<AgregarModal> {
                 onChanged: (bool value) {
                   setState(() {
                     _isPrestadoA = value;
-                    if (value) {
-                      _isPrestadoDe = false;
-                    }
+                    if (value) _isPrestadoDe = false;
                   });
                 },
               ),
@@ -463,9 +470,7 @@ class _AgregarModalState extends State<AgregarModal> {
                 onChanged: (bool value) {
                   setState(() {
                     _isPrestadoDe = value;
-                    if (value) {
-                      _isPrestadoA = false;
-                    }
+                    if (value) _isPrestadoA = false;
                   });
                 },
               ),
@@ -522,18 +527,18 @@ class _AgregarModalState extends State<AgregarModal> {
                 ),
               ],
             ],
+            // Switch para "Es leído"
             SwitchListTile(
-              title: const Text('Marcar como leido'),
+              title: const Text('Marcar como leído'),
               value: _isLeido,
               onChanged: (bool value) {
                 setState(() {
                   _isLeido = value;
-                  if (value) {
-                    _rating = 1;
-                  }
+                  if (value) _rating = 1;
                 });
               },
             ),
+            // Opciones relacionadas con "Es leído"
             if (_isLeido) ...[
               ListTile(
                 title: const Text('Fecha de lectura'),
@@ -571,27 +576,29 @@ class _AgregarModalState extends State<AgregarModal> {
                     _resena = value;
                   });
                 },
-              )
+              ),
             ],
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
+                // Lógica para guardar el libro
                 Libro newLibro = Libro(
-                    isbn: widget.isbn,
-                    titulo: widget.titulo,
-                    autor: widget.autor,
-                    genero: widget.genero,
-                    portadaUrl: widget.portadaUrl,
-                    fechaPublicacion: widget.fechaPublicacion.toIso8601String(),
-                    rating: _rating,
-                    critica: _resena,
-                    esPrestado: _isPrestadoA || _isPrestadoDe,
-                    prestadoA: _isPrestadoA ? _prestadoA : null,
-                    prestadoDe: _isPrestadoDe ? _prestadoDe : null,
-                    fechaPrestacion: _fechaPrestacion?.toIso8601String(),
-                    fechaRegreso: _fechaRegreso?.toIso8601String(),
-                    fechaLectura: _fechaSeleccionada?.toIso8601String(),
-                    totalPaginas: widget.totalPaginas);
+                  isbn: widget.isbn,
+                  titulo: widget.titulo,
+                  autor: widget.autor,
+                  genero: widget.genero,
+                  portadaUrl: widget.portadaUrl,
+                  fechaPublicacion: widget.fechaPublicacion.toIso8601String(),
+                  rating: _rating,
+                  critica: _resena,
+                  esPrestado: _isPrestado,
+                  prestadoA: _isPrestadoA ? _prestadoA : null,
+                  prestadoDe: _isPrestadoDe ? _prestadoDe : null,
+                  fechaPrestacion: _fechaPrestacion?.toIso8601String(),
+                  fechaRegreso: _fechaRegreso?.toIso8601String(),
+                  fechaLectura: _fechaSeleccionada?.toIso8601String(),
+                  totalPaginas: widget.totalPaginas,
+                );
                 guardarLibro(newLibro);
               },
               child: const Text('Guardar libro'),
@@ -773,7 +780,11 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
         libro = result;
       });
     }
-    ScaffoldMessenger.of(context).showSnackBar( const SnackBar( content: Text('Libro actualizado correctamente'), ), );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Libro actualizado correctamente'),
+      ),
+    );
   }
 
   void _mostrarModalEliminar(Libro libro) {
@@ -799,7 +810,11 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
                       .add(EliminarLibro(isbn: libro.isbn));
                   Navigator.of(context).pop();
                   Navigator.of(outerContext).pop();
-                  ScaffoldMessenger.of(outerContext).showSnackBar( const SnackBar( content: Text('Libro eliminado correctamente'), ), );
+                  ScaffoldMessenger.of(outerContext).showSnackBar(
+                    const SnackBar(
+                      content: Text('Libro eliminado correctamente'),
+                    ),
+                  );
                 },
                 child: const Text('Eliminar'),
               )
@@ -954,7 +969,9 @@ class _EditarLibroModalState extends State<EditarLibroModal> {
   @override
   void initState() {
     super.initState();
-    _isLeido = widget.libro.fechaLectura != null;
+    // Maneja el caso cuando `infoPrestacion` o campos específicos son nulos
+    _isLeido = widget.libro.fechaLectura != null &&
+        widget.libro.fechaLectura!.isNotEmpty;
     _isPrestado = widget.libro.esPrestado;
 
     // Evaluar los campos de InfoPrestacion para determinar el estado inicial
@@ -1185,67 +1202,67 @@ class _EditarLibroModalState extends State<EditarLibroModal> {
                         (picked) => _fechaRegreso = picked),
                   ),
                 ],
-                SwitchListTile(
-                  title: const Text('Marcar como leído'),
-                  value: _isLeido,
-                  onChanged: (bool value) {
-                    setState(() {
-                      _isLeido = value;
-                      if (value = false) {
-                        _rating = 0;
-                      }
-                    });
-                  },
+              ],
+              SwitchListTile(
+                title: const Text('Marcar como leído'),
+                value: _isLeido,
+                onChanged: (bool value) {
+                  setState(() {
+                    _isLeido = value;
+                    if (value = false) {
+                      _rating = 0;
+                    }
+                  });
+                },
+              ),
+              if (_isLeido) ...[
+                ListTile(
+                  title: const Text('Fecha de lectura'),
+                  subtitle: Text(
+                    _fechaSeleccionada == null
+                        ? 'Selecciona una fecha'
+                        : DateFormat.yMMMd().format(_fechaSeleccionada!),
+                  ),
+                  trailing: const Icon(Icons.calendar_today),
+                  onTap: () => seleccionarFecha(context, _fechaSeleccionada,
+                      (picked) => _fechaSeleccionada = picked),
                 ),
-                if (_isLeido) ...[
-                  ListTile(
-                    title: const Text('Fecha de lectura'),
-                    subtitle: Text(
-                      _fechaSeleccionada == null
-                          ? 'Selecciona una fecha'
-                          : DateFormat.yMMMd().format(_fechaSeleccionada!),
-                    ),
-                    trailing: const Icon(Icons.calendar_today),
-                    onTap: () => seleccionarFecha(context, _fechaSeleccionada,
-                        (picked) => _fechaSeleccionada = picked),
-                  ),
-                  ListTile(
-                    title: const Text('Calificar libro'),
-                    subtitle: Text('$_rating/10'),
-                    trailing: DropdownButton<int>(
-                      value: _rating,
-                      items: List.generate(10, (index) => index + 1)
-                          .map((value) => DropdownMenuItem<int>(
-                                value: value,
-                                child: Text('$value'),
-                              ))
-                          .toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _rating = value!;
-                        });
-                      },
-                    ),
-                  ),
-                  TextField(
-                    decoration: const InputDecoration(
-                      labelText: 'Reseña',
-                    ),
-                    maxLines: 3,
-                    controller: _resenaController,
+                ListTile(
+                  title: const Text('Calificar libro'),
+                  subtitle: Text('$_rating/10'),
+                  trailing: DropdownButton<int>(
+                    value: _rating,
+                    items: List.generate(10, (index) => index + 1)
+                        .map((value) => DropdownMenuItem<int>(
+                              value: value,
+                              child: Text('$value'),
+                            ))
+                        .toList(),
                     onChanged: (value) {
                       setState(() {
-                        _resena = value;
+                        _rating = value!;
                       });
                     },
                   ),
-                ],
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: guardarCambios,
-                  child: const Text('Guardar cambios'),
+                ),
+                TextField(
+                  decoration: const InputDecoration(
+                    labelText: 'Reseña',
+                  ),
+                  maxLines: 3,
+                  controller: _resenaController,
+                  onChanged: (value) {
+                    setState(() {
+                      _resena = value;
+                    });
+                  },
                 ),
               ],
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: guardarCambios,
+                child: const Text('Guardar cambios'),
+              ),
             ]),
       ),
     );
