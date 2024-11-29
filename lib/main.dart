@@ -1445,16 +1445,15 @@ class _PantallaReportesState extends State<PantallaReportes> {
                     ),
                     behaviors: [
                       charts.DatumLegend(
-                        outsideJustification:
-                            charts.OutsideJustification.endDrawArea,
+                        outsideJustification: charts.OutsideJustification.endDrawArea,
+                        position: charts.BehaviorPosition.top,
                         horizontalFirst: false,
-                        desiredMaxRows: 2,
-                        cellPadding:
-                            const EdgeInsets.only(right: 4.0, bottom: 4.0),
+                        desiredMaxRows: 10,
+                        cellPadding: const EdgeInsets.only(right: 4.0, bottom: 4.0),
                         entryTextStyle: charts.TextStyleSpec(
                           color: charts.MaterialPalette.purple.shadeDefault,
                           fontFamily: 'Georgia',
-                          fontSize: 11,
+                          fontSize: 10,
                         ),
                       ),
                       charts.SelectNearest(),
