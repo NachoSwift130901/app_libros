@@ -846,7 +846,7 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
             });
           }
         }
-        print(infoPrestacion);
+
       },
       child: Scaffold(
         appBar: AppBar(
@@ -914,6 +914,7 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               FloatingActionButton(
+                heroTag: 'EditarLibroTag',
                 onPressed: () {
                   _editarLibro(libro);
                 },
@@ -921,6 +922,7 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
               ),
               const SizedBox(height: 16),
               FloatingActionButton(
+                heroTag: 'EliminarLibroTag',
                 onPressed: () {
                   _mostrarModalEliminar(libro);
                 },
@@ -1455,6 +1457,7 @@ class _PantallaReportesState extends State<PantallaReportes> {
                           fontFamily: 'Georgia',
                           fontSize: 10,
                         ),
+                        insideJustification: charts.InsideJustification.topStart
                       ),
                       charts.SelectNearest(),
                       charts.DomainHighlighter(),
