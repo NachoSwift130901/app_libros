@@ -886,132 +886,134 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
         appBar: AppBar(
           title: Text(libro.titulo),
         ),
-        body: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              libro.portadaUrl.isNotEmpty
-                  ? Image.network(libro.portadaUrl)
-                  : const Icon(Icons.book, size: 100),
-              const SizedBox(height: 16),
-              Text('Título: ${libro.titulo}',
-                  style: const TextStyle(fontSize: 18)),
-              const SizedBox(height: 8),
-              Text('Autor: ${libro.autor}',
-                  style: const TextStyle(fontSize: 18)),
-              const SizedBox(height: 8),
-              Text('ISBN: ${libro.isbn}', style: const TextStyle(fontSize: 18)),
-              const SizedBox(height: 8),
-              Text('Páginas: ${libro.totalPaginas}',
-                  style: const TextStyle(fontSize: 18)),
-              const SizedBox(height: 8),
-              Text('Género: ${libro.genero}',
-                  style: const TextStyle(fontSize: 18)),
-              const SizedBox(height: 8),
-              if (libro.fechaLectura != null)
-                Text('Fecha de Lectura: ${libro.fechaLectura}',
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                libro.portadaUrl.isNotEmpty
+                    ? Image.network(libro.portadaUrl)
+                    : const Icon(Icons.book, size: 100),
+                const SizedBox(height: 16),
+                Text('Título: ${libro.titulo}',
                     style: const TextStyle(fontSize: 18)),
-              const SizedBox(height: 8),
-              if (libro.rating != 0)
-                Text('Calificación: ${libro.rating}/10',
+                const SizedBox(height: 8),
+                Text('Autor: ${libro.autor}',
                     style: const TextStyle(fontSize: 18)),
-              const SizedBox(height: 8),
-              if (libro.critica.isNotEmpty)
-                Text('Crítica: ${libro.critica}',
+                const SizedBox(height: 8),
+                Text('ISBN: ${libro.isbn}', style: const TextStyle(fontSize: 18)),
+                const SizedBox(height: 8),
+                Text('Páginas: ${libro.totalPaginas}',
                     style: const TextStyle(fontSize: 18)),
-              const SizedBox(height: 16),
-              if (libro.esPrestado) ...[
-                if (infoPrestacion.prestadoA != null &&
-                    infoPrestacion.prestadoA!.isNotEmpty) ...[
-                  Text('Prestado a: ${infoPrestacion.prestadoA}',
+                const SizedBox(height: 8),
+                Text('Género: ${libro.genero}',
+                    style: const TextStyle(fontSize: 18)),
+                const SizedBox(height: 8),
+                if (libro.fechaLectura != null)
+                  Text('Fecha de Lectura: ${libro.fechaLectura}',
                       style: const TextStyle(fontSize: 18)),
-                  Text(
-                      'Fecha prestacion : ${DateFormat.yMd().format(DateTime.parse(infoPrestacion.fechaPrestacion!))}',
+                const SizedBox(height: 8),
+                if (libro.rating != 0)
+                  Text('Calificación: ${libro.rating}/10',
                       style: const TextStyle(fontSize: 18)),
+                const SizedBox(height: 8),
+                if (libro.critica.isNotEmpty)
+                  Text('Crítica: ${libro.critica}',
+                      style: const TextStyle(fontSize: 18)),
+                const SizedBox(height: 16),
+                if (libro.esPrestado) ...[
+                  if (infoPrestacion.prestadoA != null &&
+                      infoPrestacion.prestadoA!.isNotEmpty) ...[
+                    Text('Prestado a: ${infoPrestacion.prestadoA}',
+                        style: const TextStyle(fontSize: 18)),
+                    Text(
+                        'Fecha prestacion : ${DateFormat.yMd().format(DateTime.parse(infoPrestacion.fechaPrestacion!))}',
+                        style: const TextStyle(fontSize: 18)),
+                  ],
+                  if (infoPrestacion.prestadoDe != null &&
+                      infoPrestacion.prestadoDe!.isNotEmpty) ...[
+                    Text('Prestado de: ${infoPrestacion.prestadoDe}',
+                        style: const TextStyle(fontSize: 18)),
+                    Text(
+                        'Fecha prestacion : ${DateFormat.yMd().format(DateTime.parse(infoPrestacion.fechaPrestacion!))}',
+                        style: const TextStyle(fontSize: 18)),
+                  ],
                 ],
-                if (infoPrestacion.prestadoDe != null &&
-                    infoPrestacion.prestadoDe!.isNotEmpty) ...[
-                  Text('Prestado de: ${infoPrestacion.prestadoDe}',
-                      style: const TextStyle(fontSize: 18)),
-                  Text(
-                      'Fecha prestacion : ${DateFormat.yMd().format(DateTime.parse(infoPrestacion.fechaPrestacion!))}',
-                      style: const TextStyle(fontSize: 18)),
-                ],
-              ],
-              Table(
-                border: TableBorder.all(),
-                columnWidths: const {
-                  0: FlexColumnWidth(1),
-                  1: FlexColumnWidth(2),
-                  2: FlexColumnWidth(2),
-                  3: FlexColumnWidth(2),
-                },
-                children: [
-                  const TableRow(
-                    decoration: BoxDecoration(color: Colors.grey),
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text('Fecha de Salida',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text('Fecha de Entrega',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text('Prestado A',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text('Prestado De',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                    ],
-                  ),
-                  ...prestamosRelacionados.map(
-                    (p) => TableRow(
+                Table(
+                  border: TableBorder.all(),
+                  columnWidths: const {
+                    0: FlexColumnWidth(1),
+                    1: FlexColumnWidth(2),
+                    2: FlexColumnWidth(2),
+                    3: FlexColumnWidth(2),
+                  },
+                  children: [
+                    const TableRow(
+                      decoration: BoxDecoration(color: Colors.grey),
                       children: [
-                        // Fecha de Prestación
                         Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            isValidDate(p.fechaPrestacion)
-                                ? DateFormat.yMd()
-                                    .format(DateTime.parse(p.fechaPrestacion!))
-                                : 'N/A',
-                          ),
+                          padding: EdgeInsets.all(8.0),
+                          child: Text('Fecha de Salida',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 8)),
                         ),
-                        // Fecha de Regreso
                         Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            isValidDate(p.fechaRegreso)
-                                ? DateFormat.yMd()
-                                    .format(DateTime.parse(p.fechaRegreso!))
-                                : 'N/A',
-                          ),
+                          padding: EdgeInsets.all(8.0),
+                          child: Text('Fecha de Entrega',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
-                        // Prestado A
                         Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(p.prestadoA ?? 'N/A'),
+                          padding: EdgeInsets.all(8.0),
+                          child: Text('Prestado A',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
-                        // Prestado De
                         Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(p.prestadoDe ?? 'N/A'),
+                          padding: EdgeInsets.all(8.0),
+                          child: Text('Prestado De',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              )
-            ],
+                    ...prestamosRelacionados.map(
+                      (p) => TableRow(
+                        children: [
+                          // Fecha de Prestación
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              isValidDate(p.fechaPrestacion)
+                                  ? DateFormat.yMd()
+                                      .format(DateTime.parse(p.fechaPrestacion!))
+                                  : 'N/A',
+                            ),
+                          ),
+                          // Fecha de Regreso
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              isValidDate(p.fechaRegreso)
+                                  ? DateFormat.yMd()
+                                      .format(DateTime.parse(p.fechaRegreso!))
+                                  : 'N/A',
+                            ),
+                          ),
+                          // Prestado A
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(p.prestadoA ?? 'N/A'),
+                          ),
+                          // Prestado De
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(p.prestadoDe ?? 'N/A'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            ),
           ),
         ),
         floatingActionButton: Align(
