@@ -13,9 +13,9 @@ late Database db;
 
 class RepositorioBD {
   Future<void> inicializar() async {
-    
     var fabricaBaseDatos = kIsWeb ? databaseFactoryFfiWeb : databaseFactory;
-    String rutaBaseDatos ='${await fabricaBaseDatos.getDatabasesPath()}/baseMovil2.db';
+    String rutaBaseDatos =
+        '${await fabricaBaseDatos.getDatabasesPath()}/baseMovil2.db';
     db = await fabricaBaseDatos.openDatabase(rutaBaseDatos,
         options: OpenDatabaseOptions(
             version: 1,
@@ -33,6 +33,7 @@ class RepositorioBD {
                       rating INTEGER,
                       critica TEXT,
                       esPrestado INTEGER
+                      
                     )
                     ''');
 
@@ -44,17 +45,20 @@ class RepositorioBD {
                       prestadoDe TEXT, 
                       fechaPrestacion DATE, 
                       fechaRegreso DATE, 
+                      
                       FOREIGN KEY (isbn) REFERENCES libros(isbn)
                     )
                     ''');
             }));
   }
 
-  Future<bool> existeISBN(String isbn) async { 
+  Future<bool> existeISBN(String isbn) async {
     final List<Map<String, dynamic>> maps = await db.query(
-       'libros', where: 'isbn = ?', whereArgs: [isbn], 
-      ); 
-    return maps.isNotEmpty; 
+      'libros',
+      where: 'isbn = ?',
+      whereArgs: [isbn],
+    );
+    return maps.isNotEmpty;
   }
 }
 
@@ -115,17 +119,17 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
   Future<void> todosLosLibros() async {
     await repo.inicializar();
 
-      var resultadoConsulta = await db.rawQuery('SELECT * FROM libros');
-      _listaLibros = resultadoConsulta.map((e) => Libro.fromMap(e)).toList();
-      print(_listaLibros);
-      todasLasConsultas();
-    
+    var resultadoConsulta = await db.rawQuery('SELECT * FROM libros');
+    _listaLibros = resultadoConsulta.map((e) => Libro.fromMap(e)).toList();
+    print(_listaLibros);
+    todasLasConsultas();
   }
 
   Future<void> todasLasConsultas() async {
     await repo.inicializar();
     var resultadoConsulta = await db.rawQuery('SELECT * FROM prestamos');
-    _listaPrestamos = resultadoConsulta.map((e) => InfoPrestacion.fromMap(e)).toList();
+    _listaPrestamos =
+        resultadoConsulta.map((e) => InfoPrestacion.fromMap(e)).toList();
     print(_listaPrestamos);
   }
 
@@ -159,120 +163,122 @@ class AppBloc extends Bloc<AppEvento, AppEstado> {
     }
     await todosLosLibros();
     await todasLasConsultas();
-
   }
 
   Future<void> editarLibro(Libro libro, InfoPrestacion infoPrestacion) async {
-
-
     // Si se registra una fecha de regreso, marcar esPrestado como falso
     if (infoPrestacion.fechaRegreso != null &&
         infoPrestacion.fechaRegreso!.isNotEmpty) {
       libro.esPrestado = false;
     }
 
-    print(infoPrestacion);
-
+    // Actualizar los detalles del libro
     await db.rawUpdate(
-        ''' UPDATE libros SET titulo = ?, genero = ?, autor = ?, portadaURL = ?, fechaPublicacion = ?, totalPaginas = ?, fechaLectura = ?, rating = ?, critica = ?, esPrestado = ? WHERE isbn = ? ''',
-        [
-          libro.titulo,
-          libro.genero,
-          libro.autor,
-          libro.portadaUrl,
-          libro.fechaPublicacion,
-          libro.totalPaginas,
-          libro.fechaLectura,
-          libro.rating,
-          libro.critica,
-          libro.esPrestado ? 1 : 0,
-          libro.isbn
-        ]);
-
-  // Manejar la tabla de prestamos
-  if (libro.esPrestado) {
-    // Verificar si ya existe un registro en prestamos
-    final List<Map<String, dynamic>> existingPrestamo = await db.rawQuery(
-      'SELECT * FROM prestamos WHERE isbn = ?',
-      [libro.isbn],
-    );
-
-  if (existingPrestamo.isNotEmpty) {
-      // Actualizar registro existente
-      await db.rawUpdate(
-        ''' UPDATE prestamos 
-            SET prestadoA = ?, prestadoDe = ?, fechaPrestacion = ?, fechaRegreso = ? 
-            WHERE isbn = ? ''',
-        [
-          infoPrestacion.prestadoA,
-          infoPrestacion.prestadoDe,
-          infoPrestacion.fechaPrestacion,
-          infoPrestacion.fechaRegreso,
-          libro.isbn
-        ],
-      );
-    } else  {
-      // Insertar nuevo registro en prestamos si no existía
-      await db.rawInsert(
-        ''' INSERT INTO prestamos (isbn, prestadoA, prestadoDe, fechaPrestacion, fechaRegreso) 
-            VALUES (?, ?, ?, ?, ?) ''',
-        [
-          libro.isbn,
-          infoPrestacion.prestadoA,
-          infoPrestacion.prestadoDe,
-          infoPrestacion.fechaPrestacion,
-          infoPrestacion.fechaRegreso
-        ],
-      );
-    }
-  } else if (infoPrestacion.fechaRegreso != null &&
-             infoPrestacion.fechaRegreso!.isNotEmpty) {
-    // Si se registra una fecha de regreso, actualizar el registro existente en prestamos
-    await db.rawUpdate(
-      ''' UPDATE prestamos 
-          SET fechaRegreso = ? 
-          WHERE isbn = ? ''',
+      ''' UPDATE libros SET titulo = ?, genero = ?, autor = ?, portadaURL = ?, fechaPublicacion = ?, totalPaginas = ?, fechaLectura = ?, rating = ?, critica = ?, esPrestado = ? WHERE isbn = ? ''',
       [
-        infoPrestacion.fechaRegreso,
+        libro.titulo,
+        libro.genero,
+        libro.autor,
+        libro.portadaUrl,
+        libro.fechaPublicacion,
+        libro.totalPaginas,
+        libro.fechaLectura,
+        libro.rating,
+        libro.critica,
+        libro.esPrestado ? 1 : 0,
         libro.isbn
       ],
     );
+
+    // Verificar y manejar la tabla de prestamos
+    if (libro.esPrestado) {
+      // Buscar registros de prestamos con el mismo ISBN y sin fecha de regreso
+      final List<Map<String, dynamic>> existingPrestamo = await db.rawQuery(
+        'SELECT * FROM prestamos WHERE isbn = ? AND fechaRegreso IS NULL',
+        [libro.isbn],
+      );
+
+      if (existingPrestamo.isNotEmpty) {
+        // Si existe un prestamo activo, actualizarlo
+        await db.rawUpdate(
+          ''' UPDATE prestamos 
+            SET prestadoA = ?, prestadoDe = ?, fechaPrestacion = ?, fechaRegreso = ? 
+            WHERE isbn = ? AND fechaRegreso IS NULL ''',
+          [
+            infoPrestacion.prestadoA,
+            infoPrestacion.prestadoDe,
+            infoPrestacion.fechaPrestacion,
+            infoPrestacion.fechaRegreso,
+            libro.isbn
+          ],
+        );
+      } else {
+        // Si no hay registros activos (sin fecha de regreso), crear uno nuevo
+        await db.rawInsert(
+          ''' INSERT INTO prestamos ( isbn, prestadoA, prestadoDe, fechaPrestacion, fechaRegreso ) VALUES (?, ?, ?, ?, ?) ''',
+          [
+            libro.isbn,
+            infoPrestacion.prestadoA,
+            infoPrestacion.prestadoDe,
+            infoPrestacion.fechaPrestacion,
+            infoPrestacion.fechaRegreso
+          ],
+        );
+      }
+    } else {
+      // Si el libro no está prestado, actualizar la fecha de regreso (si aplica)
+      if (infoPrestacion.fechaRegreso != null &&
+          infoPrestacion.fechaRegreso!.isNotEmpty) {
+        await db.rawUpdate(
+          ''' UPDATE prestamos 
+            SET fechaRegreso = ? 
+            WHERE isbn = ? AND fechaRegreso IS NULL ''',
+          [infoPrestacion.fechaRegreso, libro.isbn],
+        );
+      }
+    }
   }
-}
 
   Future<void> eliminarLibro(String isbn) async {
     await db.rawDelete('''DELETE FROM libros WHERE isbn = ?''', [isbn]);
   }
 
-  Future<bool> existeISBN(String isbn) async { return await repo.existeISBN(isbn); }
+  Future<bool> existeISBN(String isbn) async {
+    return await repo.existeISBN(isbn);
+  }
+
   // onEVENTOS //
   AppBloc() : super(Inicial()) {
     on<Inicializado>((event, emit) async {
       await todosLosLibros();
       await todasLasConsultas();
 
-      emit(Operacional(listaLibros: _listaLibros, listaPrestamos: _listaPrestamos));
+      emit(Operacional(
+          listaLibros: _listaLibros, listaPrestamos: _listaPrestamos));
     });
 
     on<AgregarLibro>(((event, emit) async {
       await agregarLibro(event.libro);
       await todosLosLibros();
       await todasLasConsultas();
-      emit((Operacional(listaLibros: _listaLibros, listaPrestamos: _listaPrestamos)));
+      emit((Operacional(
+          listaLibros: _listaLibros, listaPrestamos: _listaPrestamos)));
     }));
 
     on<EliminarLibro>(((event, emit) async {
       await eliminarLibro(event.isbn);
       await todosLosLibros();
       await todasLasConsultas();
-      emit((Operacional(listaLibros: _listaLibros, listaPrestamos: _listaPrestamos)));
+      emit((Operacional(
+          listaLibros: _listaLibros, listaPrestamos: _listaPrestamos)));
     }));
 
     on<EditarLibro>(((event, emit) async {
       await editarLibro(event.libro, event.infoPrestacion);
       await todosLosLibros();
       await todasLasConsultas();
-      emit((Operacional(listaLibros: _listaLibros, listaPrestamos: _listaPrestamos)));
+      emit((Operacional(
+          listaLibros: _listaLibros, listaPrestamos: _listaPrestamos)));
     }));
   }
 }

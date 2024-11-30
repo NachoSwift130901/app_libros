@@ -630,8 +630,8 @@ class _PantallaMisLibrosState extends State<PantallaMisLibros> {
     var estado = context.watch<AppBloc>().state;
 
     if (estado is Operacional) {
-      libros = (estado).listaLibros;
-      prestamos = (estado).listaPrestamos;
+      libros = estado.listaLibros;
+      prestamos = estado.listaPrestamos;
     }
 
     if (estado is Inicial) {
@@ -647,96 +647,122 @@ class _PantallaMisLibrosState extends State<PantallaMisLibros> {
       );
     }
 
-    return material.BlocBuilder<AppBloc, AppEstado>(
-      builder: (context, state) {
-        libros.sort((a, b) {
-          switch (_ordenSeleccionado) {
-            case 'Autor':
-              return a.autor.compareTo(b.autor);
-            case 'Calificación':
-              return (b.rating ?? 0).compareTo(a.rating ?? 0);
-            case 'Fecha':
-              return DateTime.parse(b.fechaPublicacion)
-                  .compareTo(DateTime.parse(a.fechaPublicacion));
-            default:
-              return a.titulo.compareTo(b.titulo);
-          }
-        });
+    // Filtrar libros según el criterio seleccionado
+    List<Libro> librosFiltrados = libros.where((libro) {
+  switch (_ordenSeleccionado) {
+    case 'Pendientes de Regresar':
+      // Libros prestados a alguien y aún no regresados
+      return prestamos.any((p) =>
+          p.isbn == libro.isbn &&
+          p.prestadoDe != null &&
+          p.prestadoDe!.isNotEmpty &&
+          (p.fechaRegreso == null || p.fechaRegreso!.isEmpty));
+    case 'Pendientes que me Regresen':
+      // Libros prestados por mí y aún no regresados
+      return prestamos.any((p) =>
+          p.isbn == libro.isbn &&
+          p.prestadoA != null &&
+          p.prestadoA!.isNotEmpty &&
+          (p.fechaRegreso == null || p.fechaRegreso!.isEmpty));
+    default:
+      return true; // Mostrar todos para otros criterios
+  }
+}).toList();
 
-        // Ordenar la lista de prestamos por fecha de préstamo en orden descendente.
-        prestamos.sort((a, b) => DateTime.parse(b.fechaPrestacion!)
-            .compareTo(DateTime.parse(a.fechaPrestacion!)));
+    // Ordenar los libros filtrados según el criterio seleccionado
+    librosFiltrados.sort((a, b) {
+      switch (_ordenSeleccionado) {
+        case 'Autor':
+          return a.autor.compareTo(b.autor);
+        case 'Calificación':
+          return (b.rating ?? 0).compareTo(a.rating ?? 0);
+        case 'Fecha':
+          return DateTime.parse(b.fechaPublicacion)
+              .compareTo(DateTime.parse(a.fechaPublicacion));
+        default:
+          return a.titulo.compareTo(b.titulo);
+      }
+    });
 
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Ordenar por:'),
-                  DropdownButton<String>(
-                    value: _ordenSeleccionado,
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        _ordenSeleccionado = newValue!;
-                      });
-                    },
-                    items: <String>['Título', 'Autor', 'Calificación', 'Fecha']
-                        .map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: libros.length,
-                itemBuilder: (context, index) {
-                  final libro = libros[index];
-                  // Filtrar prestamos por ISBN y obtener el más reciente.
-                  final prestamosFiltrados = prestamos
-                      .where((prestamo) => prestamo.isbn == libro.isbn)
-                      .toList();
-
-                  final infoPrestacionReciente = prestamosFiltrados.isNotEmpty
-                      ? prestamosFiltrados.first
-                      : null;
-                  return ListTile(
-                    leading: libro.portadaUrl.isNotEmpty
-                        ? Image.network(libro.portadaUrl,
-                            width: 50, fit: BoxFit.cover)
-                        : const Icon(Icons.book),
-                    title: Text(libro.titulo),
-                    subtitle: Text(libro.autor),
-                    trailing: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('ISBN : ${libro.isbn}'),
-                        Text('Paginas : ${libro.totalPaginas}')
-                      ],
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: ((context) => DetalleLibroMisLibrosPage(
-                                    libro: libro,
-                                    infoPrestacion: infoPrestacionReciente ??
-                                        InfoPrestacion(isbn: libro.isbn),
-                                  ))));
-                    },
-                  );
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Ordenar por:'),
+              DropdownButton<String>(
+                value: _ordenSeleccionado,
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _ordenSeleccionado = newValue!;
+                  });
                 },
+                items: <String>[
+                  'Título',
+                  'Autor',
+                  'Calificación',
+                  'Fecha',
+                  'Pendientes de Regresar',
+                  'Pendientes que me Regresen'
+                ].map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: librosFiltrados.length,
+            itemBuilder: (context, index) {
+              final libro = librosFiltrados[index];
+              // Filtrar prestamos por ISBN y obtener el más reciente.
+              final prestamosFiltrados = prestamos
+                  .where((prestamo) =>
+                      prestamo.isbn == libro.isbn &&
+                      (prestamo.fechaRegreso == null ||
+                          prestamo.fechaRegreso!.isEmpty))
+                  .toList();
+
+              // Obtener el préstamo más relevante
+              final infoPrestacionReciente = prestamosFiltrados.isNotEmpty
+                  ? prestamosFiltrados.first
+                  : null;
+
+              return ListTile(
+                leading: libro.portadaUrl.isNotEmpty
+                    ? Image.network(libro.portadaUrl,
+                        width: 50, fit: BoxFit.cover)
+                    : const Icon(Icons.book),
+                title: Text(libro.titulo),
+                subtitle: Text(libro.autor),
+                trailing: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('ISBN : ${libro.isbn}'),
+                    Text('Páginas : ${libro.totalPaginas}')
+                  ],
+                ),
+                onTap: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: ((context) => DetalleLibroMisLibrosPage(
+                                libro: libro,
+                                infoPrestacion: infoPrestacionReciente ??
+                                    InfoPrestacion(isbn: libro.isbn),
+                              ))));
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
@@ -765,6 +791,13 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
     super.initState();
     libro = widget.libro;
     infoPrestacion = widget.infoPrestacion;
+
+    // Obtener los datos iniciales del Bloc
+    final state = context.read<AppBloc>().state;
+    if (state is Operacional) {
+      prestamosRelacionados =
+          state.listaPrestamos.where((p) => p.isbn == libro.isbn).toList();
+    }
   }
 
   Future<void> _editarLibro(Libro libro) async {
@@ -823,30 +856,31 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
         });
   }
 
+  List<InfoPrestacion> prestamosRelacionados = [];
+
   @override
   Widget build(BuildContext context) {
     return material.BlocListener<AppBloc, AppEstado>(
       listener: (context, state) {
         if (state is Operacional) {
-          // Actualiza la información del libro
-          int indexLibro =
-              state.listaLibros.indexWhere((l) => l.isbn == libro.isbn);
-          if (indexLibro != -1) {
-            setState(() {
+          setState(() {
+            prestamosRelacionados = state.listaPrestamos
+                .where((p) => p.isbn == libro.isbn)
+                .toList();
+
+            int indexLibro =
+                state.listaLibros.indexWhere((l) => l.isbn == libro.isbn);
+            if (indexLibro != -1) {
               libro = state.listaLibros[indexLibro];
-            });
-          }
+            }
 
-          // Actualiza la información de infoprestación
-          int indexPrestacion = state.listaPrestamos
-              .indexWhere((p) => p.isbn == infoPrestacion.isbn);
-          if (indexPrestacion != -1) {
-            setState(() {
+            int indexPrestacion = state.listaPrestamos
+                .indexWhere((p) => p.isbn == infoPrestacion.isbn);
+            if (indexPrestacion != -1) {
               infoPrestacion = state.listaPrestamos[indexPrestacion];
-            });
-          }
+            }
+          });
         }
-
       },
       child: Scaffold(
         appBar: AppBar(
@@ -886,7 +920,7 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
               if (libro.critica.isNotEmpty)
                 Text('Crítica: ${libro.critica}',
                     style: const TextStyle(fontSize: 18)),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
               if (libro.esPrestado) ...[
                 if (infoPrestacion.prestadoA != null &&
                     infoPrestacion.prestadoA!.isNotEmpty) ...[
@@ -904,7 +938,79 @@ class _DetalleLibroMisLibrosPageState extends State<DetalleLibroMisLibrosPage> {
                       'Fecha prestacion : ${DateFormat.yMd().format(DateTime.parse(infoPrestacion.fechaPrestacion!))}',
                       style: const TextStyle(fontSize: 18)),
                 ],
-              ]
+              ],
+              Table(
+                border: TableBorder.all(),
+                columnWidths: const {
+                  0: FlexColumnWidth(1),
+                  1: FlexColumnWidth(2),
+                  2: FlexColumnWidth(2),
+                  3: FlexColumnWidth(2),
+                },
+                children: [
+                  const TableRow(
+                    decoration: BoxDecoration(color: Colors.grey),
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text('Fecha de Salida',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text('Fecha de Entrega',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text('Prestado A',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text('Prestado De',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                  ...prestamosRelacionados.map(
+                    (p) => TableRow(
+                      children: [
+                        // Fecha de Prestación
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            isValidDate(p.fechaPrestacion)
+                                ? DateFormat.yMd()
+                                    .format(DateTime.parse(p.fechaPrestacion!))
+                                : 'N/A',
+                          ),
+                        ),
+                        // Fecha de Regreso
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            isValidDate(p.fechaRegreso)
+                                ? DateFormat.yMd()
+                                    .format(DateTime.parse(p.fechaRegreso!))
+                                : 'N/A',
+                          ),
+                        ),
+                        // Prestado A
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(p.prestadoA ?? 'N/A'),
+                        ),
+                        // Prestado De
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(p.prestadoDe ?? 'N/A'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              )
             ],
           ),
         ),
@@ -1059,6 +1165,7 @@ class _EditarLibroModalState extends State<EditarLibroModal> {
         .add(EditarLibro(libro: libroEditado, infoPrestacion: infoPrestacion));
 
     Navigator.pop(context, libroEditado);
+    Navigator.pop(context);
 
     setState(() {});
   }
@@ -1111,41 +1218,53 @@ class _EditarLibroModalState extends State<EditarLibroModal> {
               SwitchListTile(
                 title: const Text('Es prestado?'),
                 value: _isPrestado,
-                onChanged: (bool value) {
-                  setState(() {
-                    _isPrestado = value;
-                    if (!value) {
-                      _isPrestadoA = false;
-                      _isPrestadoDe = false;
-                    }
-                  });
-                },
+                onChanged: (_isPrestadoA || _isPrestadoDe)
+                    ? null // Deshabilita si "Prestado A" o "Prestado De" están activados
+                    : (bool value) {
+                        setState(() {
+                          _isPrestado = value;
+                          if (!value) {
+                            _isPrestadoA = false;
+                            _isPrestadoDe = false;
+                          }
+                        });
+                      },
               ),
               if (_isPrestado) ...[
                 SwitchListTile(
                   title: const Text('Prestado A'),
                   value: _isPrestadoA,
-                  onChanged: (bool value) {
-                    setState(() {
-                      _isPrestadoA = value;
-                      if (value) {
-                        _isPrestadoDe = false;
-                      }
-                    });
-                  },
+                  onChanged: (_isPrestadoDe ||
+                          !_isPrestado ||
+                          widget.infoPrestacion.prestadoA != null)
+                      ? null // Deshabilita si ya estaba activado desde el inicio o "Prestado De" está activado
+                      : (bool value) {
+                          setState(() {
+                            _isPrestadoA = value;
+                            if (value) {
+                              _isPrestadoDe =
+                                  false; // Desactiva "Prestado De" si se activa "Prestado A"
+                            }
+                          });
+                        },
                 ),
-                SwitchListTile(
-                  title: const Text('Prestado De'),
-                  value: _isPrestadoDe,
-                  onChanged: (bool value) {
-                    setState(() {
-                      _isPrestadoDe = value;
-                      if (value) {
-                        _isPrestadoA = false;
-                      }
-                    });
-                  },
-                ),
+                if (!_isPrestadoA) // Oculta "Prestado De" si "Prestado A" está activado
+                  SwitchListTile(
+                    title: const Text('Prestado De'),
+                    value: _isPrestadoDe,
+                    onChanged: (_isPrestadoA ||
+                            widget.infoPrestacion.prestadoDe != null)
+                        ? null // Deshabilita si ya estaba activado desde el inicio o "Prestado A" está activado
+                        : (bool value) {
+                            setState(() {
+                              _isPrestadoDe = value;
+                              if (value) {
+                                _isPrestadoA =
+                                    false; // Desactiva "Prestado A" si se activa "Prestado De"
+                              }
+                            });
+                          },
+                  ),
                 if (_isPrestadoA) ...[
                   TextField(
                     decoration: const InputDecoration(labelText: 'Prestado a'),
@@ -1447,18 +1566,20 @@ class _PantallaReportesState extends State<PantallaReportes> {
                     ),
                     behaviors: [
                       charts.DatumLegend(
-                        outsideJustification: charts.OutsideJustification.endDrawArea,
-                        position: charts.BehaviorPosition.top,
-                        horizontalFirst: false,
-                        desiredMaxRows: 10,
-                        cellPadding: const EdgeInsets.only(right: 4.0, bottom: 4.0),
-                        entryTextStyle: charts.TextStyleSpec(
-                          color: charts.MaterialPalette.purple.shadeDefault,
-                          fontFamily: 'Georgia',
-                          fontSize: 10,
-                        ),
-                        insideJustification: charts.InsideJustification.topStart
-                      ),
+                          outsideJustification:
+                              charts.OutsideJustification.endDrawArea,
+                          position: charts.BehaviorPosition.top,
+                          horizontalFirst: false,
+                          desiredMaxRows: 10,
+                          cellPadding:
+                              const EdgeInsets.only(right: 4.0, bottom: 4.0),
+                          entryTextStyle: charts.TextStyleSpec(
+                            color: charts.MaterialPalette.purple.shadeDefault,
+                            fontFamily: 'Georgia',
+                            fontSize: 10,
+                          ),
+                          insideJustification:
+                              charts.InsideJustification.topStart),
                       charts.SelectNearest(),
                       charts.DomainHighlighter(),
                     ],
@@ -1677,4 +1798,16 @@ Future<int?> showYearPicker({
     },
   );
   return selectedYear;
+}
+
+bool isValidDate(String? date) {
+  if (date == null || date.isEmpty) {
+    return false;
+  }
+  try {
+    DateTime.parse(date); // Intenta parsear la fecha
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
